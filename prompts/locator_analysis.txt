@@ -1,0 +1,17 @@
+A Playwright locator failed to resolve during a UI test. Compare the expected
+locator against the current DOM below and suggest the most likely correct
+replacement selector(s). Prefer stable selectors (data-testid, formcontrolname,
+id) over brittle class chains. Use ONLY selectors that actually appear in the
+DOM provided.
+
+EXPECTED LOCATOR: {{EXPECTED_LOCATOR}}
+
+DOM (truncated):
+{{DOM}}
+
+Respond with ONLY a single JSON object (no prose, no code fences):
+{
+  "suggestions": [
+    {"locator": "css or role selector", "similarity": 0-100, "rationale": "why"}
+  ]
+}

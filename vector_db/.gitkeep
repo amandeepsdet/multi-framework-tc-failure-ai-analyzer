@@ -1,0 +1,2 @@
+# Vector database (runtime output) for RAG similarity search.
+# The default JSON backend writes vector_store.json here; safe to delete.

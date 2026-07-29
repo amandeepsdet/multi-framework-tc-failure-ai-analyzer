@@ -1,0 +1,24 @@
+# Core automation stack
+playwright>=1.40
+pytest>=8.0
+pytest-playwright>=0.5
+requests>=2.31
+
+# Reporting
+allure-pytest>=2.13
+pytest-html>=4.1
+
+# Configuration / secrets
+python-dotenv>=1.0
+
+# =====================================================================
+# AI Failure Analysis Engine — OPTIONAL extras.
+# The engine works fully offline (heuristic analysis + JSON vector store +
+# hash embeddings) with NONE of these installed. Uncomment only the provider
+# / backend you actually want to use.
+# =====================================================================
+# openai>=1.30          # AI_PROVIDER=openai or azure (+ embeddings)
+# anthropic>=0.30       # AI_PROVIDER=claude
+# google-generativeai>=0.7  # AI_PROVIDER=gemini
+# chromadb>=0.5         # AI_VECTOR_BACKEND=chroma
+# Ollama (AI_PROVIDER=ollama) needs no Python package — just a running daemon.

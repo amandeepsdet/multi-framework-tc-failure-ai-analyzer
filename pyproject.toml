@@ -1,0 +1,90 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "playwright-tc-failure-ai-analyzer"
+version = "2.0.1"
+description = "An AI-powered Quality Engineering SDK. Turns a failing test from ANY automation framework (Playwright, Selenium, Cypress, Robot Framework, pytest, ...) into an evidence-grounded root-cause analysis, confidence score, owner, and tracker-ready bug report. Framework-agnostic core, adapter-based, works fully offline with zero API keys."
+readme = "PACKAGE_README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Aman Deep", email = "amandeep242712@gmail.com" }]
+keywords = [
+    "quality-engineering",
+    "sdk",
+    "pytest",
+    "playwright",
+    "selenium",
+    "robotframework",
+    "test-automation",
+    "ai",
+    "root-cause-analysis",
+    "failure-analysis",
+    "bug-report",
+    "llm",
+    "rag",
+]
+classifiers = [
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Quality Assurance",
+]
+# Core install is intentionally light: the engine runs fully offline using only
+# the standard library. pytest is required because the primary integration is a
+# pytest plugin. Everything else (Playwright, reports, cloud LLMs, vector DBs)
+# is opt-in via the extras below.
+dependencies = ["pytest>=7.0"]
+
+[project.optional-dependencies]
+# Evidence capture from live Playwright pages.
+playwright = ["playwright>=1.40", "pytest-playwright>=0.5"]
+# Attach analysis to Allure and pytest-html reports.
+reports = ["allure-pytest>=2.13", "pytest-html>=4.1"]
+# Cloud / local LLM providers (all lazily imported; pick what you need).
+openai = ["openai>=1.0"]
+llm = ["openai>=1.0", "requests>=2.31"]
+# Optional ChromaDB vector backend (the default JSON backend needs nothing).
+vector = ["chromadb>=0.4"]
+# Everything, for a one-shot full-featured install.
+all = [
+    "playwright>=1.40",
+    "pytest-playwright>=0.5",
+    "allure-pytest>=2.13",
+    "pytest-html>=4.1",
+    "openai>=1.0",
+    "requests>=2.31",
+    "python-dotenv>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer"
+Issues = "https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer/issues"
+Source = "https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer"
+
+# Console entry point for the interactive QA assistant / CLI.
+[project.scripts]
+qa-ai = "qa_ai_engine.assistant.commands:run"
+
+# Auto-discovered by pytest so failure analysis works with zero wiring.
+[project.entry-points.pytest11]
+qa_ai_engine = "qa_ai_engine.plugin"
+
+[tool.setuptools]
+# Ship the framework-agnostic AIQA SDK (aiqa) plus the pytest-plugin engine
+# (qa_ai_engine) — never the host framework's tests, pages, or utils.
+packages = [
+    "aiqa",
+    "aiqa.core",
+    "aiqa.analysis",
+    "aiqa.reporting",
+    "aiqa.adapters",
+    "qa_ai_engine",
+    "qa_ai_engine.assistant",
+]

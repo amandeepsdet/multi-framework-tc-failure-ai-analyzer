@@ -1,0 +1,25 @@
+Generate a professional, tracker-ready bug report (suitable for Jira, Azure
+DevOps, or GitHub Issues) from the failure analysis below. Base every section
+strictly on the provided evidence; do not fabricate reproduction steps or data.
+
+TEST: {{TEST_NAME}}
+CATEGORY: {{CATEGORY}}
+ROOT CAUSE: {{ROOT_CAUSE}}
+SEVERITY: {{SEVERITY}}
+ENVIRONMENT: {{ENVIRONMENT}}
+EVIDENCE:
+{{EVIDENCE}}
+RECOMMENDED FIX: {{RECOMMENDED_FIX}}
+
+Respond with ONLY a single JSON object (no prose, no code fences):
+{
+  "title": "concise, searchable bug title",
+  "description": "clear problem statement",
+  "steps": ["step 1", "step 2", "..."],
+  "expected": "the expected result",
+  "actual": "the observed result",
+  "severity": "Blocker|Critical|Major|Minor|Trivial",
+  "priority": "P1|P2|P3|P4",
+  "owner": "suggested owning team/role",
+  "suggested_fix": "the recommended fix"
+}

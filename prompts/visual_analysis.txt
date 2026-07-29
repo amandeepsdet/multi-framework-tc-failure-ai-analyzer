@@ -1,0 +1,20 @@
+Inspect the attached screenshot of a ThingsBoard dashboard captured at the
+moment a UI test failed. Answer strictly from what is visible in the image; do
+not speculate beyond the pixels.
+
+Questions:
+- Is an expected widget missing?
+- Is a loading spinner still visible?
+- Is the dashboard blank / empty?
+- Is the layout broken or misaligned?
+- Is an authentication / login page shown instead of the dashboard?
+
+Respond with ONLY a single JSON object (no prose, no code fences):
+{
+  "widget_missing": true|false,
+  "spinner_visible": true|false,
+  "dashboard_blank": true|false,
+  "layout_broken": true|false,
+  "auth_page_shown": true|false,
+  "summary": "one sentence describing what the screenshot shows"
+}

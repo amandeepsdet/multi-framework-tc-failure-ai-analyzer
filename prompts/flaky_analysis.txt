@@ -1,0 +1,14 @@
+Analyse the following test execution history and identify flaky tests —
+tests that pass and fail intermittently without a corresponding code change, or
+whose failures are classified inconsistently across runs. Use ONLY the data
+provided.
+
+HISTORY:
+{{HISTORY}}
+
+Respond with ONLY a single JSON object (no prose, no code fences):
+{
+  "flaky_tests": [
+    {"test": "test name", "reason": "why it appears flaky", "confidence": 0-100}
+  ]
+}

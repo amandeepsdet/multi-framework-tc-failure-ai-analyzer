@@ -1,0 +1,32 @@
+# Python / virtual env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Secrets — never commit real credentials
+.env
+
+# Generated artifacts
+logs/
+reports/
+screenshots/
+test-results/
+
+# AI engine runtime output (keep the folders via .gitkeep, ignore contents)
+failure_history/*
+!failure_history/.gitkeep
+ai_reports/*
+!ai_reports/.gitkeep
+vector_db/*
+!vector_db/.gitkeep
+
+# Local zip artifacts
+ABB_Assignment_*.zip
+make_zip*.ps1
+
+# Python packaging / build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
