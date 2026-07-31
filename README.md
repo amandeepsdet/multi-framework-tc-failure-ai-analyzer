@@ -205,7 +205,7 @@ Full-featured scripts (Selenium, JSON, live page/driver) are also in the
 - ⬜ MCP Server
 - ⬜ Jira Integration
 - ⬜ GitHub Issue Generator
-- ⬜ Slack Notifications
+- ⬜ Slack/Teams Notifications
 
 ## Contributing
 
