@@ -28,7 +28,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-          pip install pytest ruff black
+          # Runtime deps for the shared demo conftest (Playwright/requests/etc.).
+          # Only the Python packages are needed to import it; the offline SDK + AI
+          # tests never launch a browser, so no `playwright install` is required.
+          pip install -r requirements.txt
+          pip install ruff black
 
       - name: Lint (ruff)
         run: ruff check aiqa
