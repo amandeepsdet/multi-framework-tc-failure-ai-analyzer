@@ -10,11 +10,11 @@ anything that can emit JSON — into an evidence-grounded **root cause**,
 fully offline (deterministic heuristics + pure-Python similarity) and upgrades
 transparently to an LLM when configured.
 
-- **Install:** `pip install playwright-tc-failure-ai-analyzer` · **import:** `aiqa`
+- **Install:** `pip install multi-framework-tc-failure-ai-analyzer` · **import:** `aiqa`
 - **Architecture:** Adapters → `FailureContext` → AI Engine → `AnalysisResult` → Reporters.
   The core has **zero** framework and **zero** application knowledge; all
   framework logic lives in swappable adapters.
-- **Docs:** [PACKAGE_README.md](PACKAGE_README.md) · runnable [`examples/`](examples/).
+- **Docs:** [PACKAGE_README.md](PACKAGE_README.md) · runnable [`examples/`](examples/) · [Migration Guide](docs/MIGRATION.md).
 
 The ThingsBoard suite described below is the **reference demo project** that
 exercises the SDK end to end.

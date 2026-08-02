@@ -3,9 +3,9 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "playwright-tc-failure-ai-analyzer"
-version = "2.0.1"
-description = "An AI-powered Quality Engineering SDK. Turns a failing test from ANY automation framework (Playwright, Selenium, Cypress, Robot Framework, pytest, ...) into an evidence-grounded root-cause analysis, confidence score, owner, and tracker-ready bug report. Framework-agnostic core, adapter-based, works fully offline with zero API keys."
+name = "multi-framework-tc-failure-ai-analyzer"
+version = "3.0.0"
+description = "A framework-agnostic, AI-powered Quality Engineering SDK. Turns a failing test from ANY automation framework (Playwright, Selenium, Robot Framework, pytest, Cypress, ...) into an evidence-grounded root-cause analysis, confidence score, owner, and tracker-ready bug report. Adapter-based core, works fully offline with zero API keys. (Formerly published as playwright-tc-failure-ai-analyzer.)"
 readme = "PACKAGE_README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -14,6 +14,8 @@ authors = [{ name = "Aman Deep", email = "amandeep242712@gmail.com" }]
 keywords = [
     "quality-engineering",
     "sdk",
+    "multi-framework",
+    "framework-agnostic",
     "pytest",
     "playwright",
     "selenium",
@@ -64,9 +66,12 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer"
-Issues = "https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer/issues"
-Source = "https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer"
+Homepage = "https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer"
+Repository = "https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer"
+Documentation = "https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer#readme"
+Issues = "https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/issues"
+Changelog = "https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/blob/main/CHANGELOG.md"
+Source = "https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer"
 
 # Console entry point for the interactive QA assistant / CLI.
 [project.scripts]

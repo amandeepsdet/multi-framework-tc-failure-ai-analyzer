@@ -7,36 +7,35 @@
 <br />
 
 <!-- Group 1 — Project -->
-[![PyPI version](https://img.shields.io/pypi/v/playwright-tc-failure-ai-analyzer?logo=pypi&logoColor=white&label=PyPI&color=blue)](https://pypi.org/project/playwright-tc-failure-ai-analyzer/)
-[![Python versions](https://img.shields.io/pypi/pyversions/playwright-tc-failure-ai-analyzer?logo=python&logoColor=white)](https://pypi.org/project/playwright-tc-failure-ai-analyzer/)
+[![PyPI version](https://img.shields.io/pypi/v/multi-framework-tc-failure-ai-analyzer?logo=pypi&logoColor=white&label=PyPI&color=blue)](https://pypi.org/project/multi-framework-tc-failure-ai-analyzer/)
+[![Python versions](https://img.shields.io/pypi/pyversions/multi-framework-tc-failure-ai-analyzer?logo=python&logoColor=white)](https://pypi.org/project/multi-framework-tc-failure-ai-analyzer/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](#)
 [![Status](https://img.shields.io/badge/status-production--ready-brightgreen)](#)
 
 <!-- Group 2 — Quality -->
-<!-- TODO(build): enable once .github/workflows/ci.yml exists —
-[![Build](https://img.shields.io/github/actions/workflow/status/amandeepsdet/playwright-tc-failure-ai-analyzer/ci.yml?branch=main&logo=githubactions&logoColor=white&label=build)](https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer/actions) -->
-<!-- TODO(tests): enable once a tests workflow exists —
-[![Tests](https://img.shields.io/github/actions/workflow/status/amandeepsdet/playwright-tc-failure-ai-analyzer/tests.yml?branch=main&logo=pytest&logoColor=white&label=tests)](https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer/actions) -->
+[![CI](https://img.shields.io/github/actions/workflow/status/amandeepsdet/multi-framework-tc-failure-ai-analyzer/ci.yml?branch=main&logo=githubactions&logoColor=white&label=CI)](https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/amandeepsdet/multi-framework-tc-failure-ai-analyzer/ci.yml?branch=main&logo=pytest&logoColor=white&label=tests)](https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/actions/workflows/ci.yml)
 <!-- TODO(coverage): enable once coverage reporting (e.g. Codecov) is wired —
-[![Coverage](https://img.shields.io/codecov/c/github/amandeepsdet/playwright-tc-failure-ai-analyzer?logo=codecov&logoColor=white)](https://codecov.io/gh/amandeepsdet/playwright-tc-failure-ai-analyzer) -->
+[![Coverage](https://img.shields.io/codecov/c/github/amandeepsdet/multi-framework-tc-failure-ai-analyzer?logo=codecov&logoColor=white)](https://codecov.io/gh/amandeepsdet/multi-framework-tc-failure-ai-analyzer) -->
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white)](https://github.com/astral-sh/ruff)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Typed](https://img.shields.io/badge/typing-typed-blue.svg)](#)
 
 <!-- Group 3 — Community -->
-[![GitHub stars](https://img.shields.io/github/stars/amandeepsdet/playwright-tc-failure-ai-analyzer?logo=github&label=stars)](https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/amandeepsdet/playwright-tc-failure-ai-analyzer?logo=github&label=forks)](https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer/network/members)
-[![GitHub issues](https://img.shields.io/github/issues/amandeepsdet/playwright-tc-failure-ai-analyzer?logo=github)](https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer/issues)
-[![Pull requests](https://img.shields.io/github/issues-pr/amandeepsdet/playwright-tc-failure-ai-analyzer?logo=github)](https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer/pulls)
-[![Downloads](https://img.shields.io/pypi/dm/playwright-tc-failure-ai-analyzer?logo=pypi&logoColor=white&label=downloads)](https://pypi.org/project/playwright-tc-failure-ai-analyzer/)
-[![Latest release](https://img.shields.io/github/v/release/amandeepsdet/playwright-tc-failure-ai-analyzer?logo=github&label=release&include_prereleases&sort=semver)](https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer/releases)
+[![GitHub stars](https://img.shields.io/github/stars/amandeepsdet/multi-framework-tc-failure-ai-analyzer?logo=github&label=stars)](https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/amandeepsdet/multi-framework-tc-failure-ai-analyzer?logo=github&label=forks)](https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/amandeepsdet/multi-framework-tc-failure-ai-analyzer?logo=github)](https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/issues)
+[![Pull requests](https://img.shields.io/github/issues-pr/amandeepsdet/multi-framework-tc-failure-ai-analyzer?logo=github)](https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/pulls)
+[![Downloads](https://img.shields.io/pypi/dm/multi-framework-tc-failure-ai-analyzer?logo=pypi&logoColor=white&label=downloads)](https://pypi.org/project/multi-framework-tc-failure-ai-analyzer/)
+[![Latest release](https://img.shields.io/github/v/release/amandeepsdet/multi-framework-tc-failure-ai-analyzer?logo=github&label=release&include_prereleases&sort=semver)](https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/releases)
 
 <!-- Group 4 — Documentation -->
 [![Documentation](https://img.shields.io/badge/docs-PACKAGE__README-informational)](PACKAGE_README.md)
 [![Examples](https://img.shields.io/badge/examples-runnable-informational)](examples/)
 [![API](https://img.shields.io/badge/API-reference-informational)](PACKAGE_README.md#core-domain)
-[![Contributing](https://img.shields.io/badge/contributing-welcome-informational)](#contributing)
+[![Migration](https://img.shields.io/badge/migration-2.x%20%E2%86%92%203.0-orange)](docs/MIGRATION.md)
+[![Contributing](https://img.shields.io/badge/contributing-welcome-informational)](CONTRIBUTING.md)
 [![Roadmap](https://img.shields.io/badge/roadmap-see%20plan-informational)](#roadmap)
 [![Security](https://img.shields.io/badge/security-policy-informational)](#12-security)
 
@@ -58,10 +57,22 @@
 ---
 
 `aiqa` is a **framework-agnostic** SDK that turns a failing test from _any_
-automation stack (Playwright, Selenium, Cypress, Robot Framework, Appium,
-Requests, REST Assured, JUnit, NUnit, TestNG, pytest, …) into an
-evidence-grounded **root cause**, **confidence score**, **owning team**, and
-**tracker-ready bug report** — fully offline, with an optional LLM upgrade.
+automation stack into an evidence-grounded **root cause**, **confidence score**,
+**owning team**, and **tracker-ready bug report** — fully offline, with an
+optional LLM upgrade.
+
+The project **originally started as a Playwright-specific AI failure analyzer**.
+It has since evolved into a **framework-agnostic SDK** that supports
+**Playwright**, **Selenium**, **Robot Framework**, and **pytest** (plus Cypress,
+Appium, Requests, REST Assured, JUnit, NUnit, TestNG, or anything that can emit
+JSON) through an **adapter-based architecture** — while the core stays free of
+any framework or application knowledge.
+
+> [!IMPORTANT]
+> **This package has been renamed.**
+> Please install **`multi-framework-tc-failure-ai-analyzer`**. Future releases
+> will only be published under the new package. See the
+> **[Migration Guide](docs/MIGRATION.md)** for details.
 
 > **→ Full SDK docs & architecture: [PACKAGE_README.md](PACKAGE_README.md)** ·
 > runnable [`examples/`](examples/). The ThingsBoard suite further below is the
@@ -70,8 +81,8 @@ evidence-grounded **root cause**, **confidence score**, **owning team**, and
 ## Quick Install
 
 ```bash
-pip install playwright-tc-failure-ai-analyzer            # core SDK (offline)
-pip install "playwright-tc-failure-ai-analyzer[openai]"  # + optional LLM analysis
+pip install multi-framework-tc-failure-ai-analyzer            # core SDK (offline)
+pip install "multi-framework-tc-failure-ai-analyzer[openai]"  # + optional LLM analysis
 ```
 
 ## Quick Start
@@ -119,7 +130,7 @@ print(render(result, "markdown", context))   # or "json" | "html" | "console"
   </tr>
   <tr>
     <td><img src="docs/images/cli-assistant.png" alt="Interactive CLI AI assistant answering a question" /><br /><sub><b>CLI Assistant</b></sub></td>
-    <td><img src="docs/images/pypi.png" alt="PyPI package page for playwright-tc-failure-ai-analyzer" /><br /><sub><b>PyPI Package</b></sub></td>
+    <td><img src="docs/images/pypi.png" alt="PyPI package page for multi-framework-tc-failure-ai-analyzer" /><br /><sub><b>PyPI Package</b></sub></td>
   </tr>
   <tr>
     <td colspan="2" align="center"><img src="docs/images/folder-structure.png" alt="Project folder structure overview" width="60%" /><br /><sub><b>Project Folder Structure</b></sub></td>
@@ -220,7 +231,7 @@ Contributions are welcome! To get started:
 
 Please run `ruff` and `black` before submitting. Bug reports and feature
 requests are tracked in
-[GitHub Issues](https://github.com/amandeepsdet/playwright-tc-failure-ai-analyzer/issues).
+[GitHub Issues](https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/issues).
 
 ## FAQ
 
@@ -236,7 +247,7 @@ anything that can emit JSON, via the adapter layer.
 default offline path adds negligible overhead.
 
 **What's the import name vs the install name?** Install
-`playwright-tc-failure-ai-analyzer`; import `aiqa`.
+`multi-framework-tc-failure-ai-analyzer`; import `aiqa`.
 
 **Is the original pytest + Playwright plugin still available?** Yes — the
 `qa_ai_engine` pytest plugin ships in the same distribution for backward

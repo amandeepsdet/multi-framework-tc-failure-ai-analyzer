@@ -52,7 +52,7 @@ from .core import (
 from .core.interfaces import Analyzer, FrameworkAdapter, LLMProvider, Reporter, SimilarityIndex
 from .reporting import BugReportBuilder, available_formats, get_reporter
 
-__version__ = "2.0.1"
+__version__ = "3.0.0"
 
 __all__ = [
     "__version__",

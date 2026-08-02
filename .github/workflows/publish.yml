@@ -1,0 +1,40 @@
+name: Publish to PyPI
+
+# Builds and publishes multi-framework-tc-failure-ai-analyzer to PyPI when a
+# GitHub Release is published (tag like v3.0.0), or on manual dispatch.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    name: Build & publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Check distribution metadata
+        run: twine check dist/*
+
+      # Publishes the NEW package: multi-framework-tc-failure-ai-analyzer.
+      # Add a repository secret named PYPI_API_TOKEN (a PyPI API token).
+      - name: Publish to PyPI (twine)
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload --non-interactive dist/*

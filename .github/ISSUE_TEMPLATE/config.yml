@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Migration help (2.x → 3.0)
+    url: https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/blob/main/docs/MIGRATION.md
+    about: Renaming from playwright-tc-failure-ai-analyzer? Read the migration guide first.
+  - name: Documentation
+    url: https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer#readme
+    about: Full SDK docs, architecture, and examples.

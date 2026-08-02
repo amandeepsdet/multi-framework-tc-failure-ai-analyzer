@@ -15,7 +15,13 @@ It runs **fully offline with zero API keys** (deterministic heuristic engine +
 pure-Python similarity search) and upgrades transparently to an LLM when you
 configure one.
 
-> Install name: `playwright-tc-failure-ai-analyzer` · Import name: `aiqa`
+> Install name: `multi-framework-tc-failure-ai-analyzer` · Import name: `aiqa`
+
+> **Renamed package.** This project was formerly published as
+> `playwright-tc-failure-ai-analyzer`. It is now
+> **`multi-framework-tc-failure-ai-analyzer`** to reflect its framework-agnostic,
+> adapter-based design. Future releases ship only under the new name — see the
+> [Migration Guide](https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/blob/main/docs/MIGRATION.md).
 
 ---
 
@@ -55,8 +61,8 @@ The engine's entire contract is one method:
 ## Install
 
 ```bash
-pip install playwright-tc-failure-ai-analyzer            # core SDK (offline)
-pip install "playwright-tc-failure-ai-analyzer[openai]"  # + LLM analysis
+pip install multi-framework-tc-failure-ai-analyzer            # core SDK (offline)
+pip install "multi-framework-tc-failure-ai-analyzer[openai]"  # + LLM analysis
 ```
 
 ## Quick start
