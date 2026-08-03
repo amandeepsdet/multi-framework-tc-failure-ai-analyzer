@@ -89,6 +89,7 @@ packages = [
     "aiqa.core",
     "aiqa.analysis",
     "aiqa.reporting",
+    "aiqa.reporting.portal",
     "aiqa.adapters",
     "qa_ai_engine",
     "qa_ai_engine.assistant",
