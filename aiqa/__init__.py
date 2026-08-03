@@ -50,9 +50,9 @@ from .core import (
     SimilarFailure,
 )
 from .core.interfaces import Analyzer, FrameworkAdapter, LLMProvider, Reporter, SimilarityIndex
-from .reporting import BugReportBuilder, available_formats, get_reporter
+from .reporting import BugReportBuilder, QualityPortal, available_formats, get_reporter
 
-__version__ = "3.0.0"
+__version__ = "3.1.0"
 
 __all__ = [
     "__version__",
@@ -91,6 +91,7 @@ __all__ = [
     "NullIndex",
     # reporting
     "BugReportBuilder",
+    "QualityPortal",
     "available_formats",
     "get_reporter",
     # config + subpackages

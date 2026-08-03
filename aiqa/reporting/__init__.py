@@ -12,6 +12,7 @@ from .console import ConsoleReporter
 from .html import HTMLReporter
 from .json_report import JSONReporter
 from .markdown import MarkdownReporter
+from .portal import QualityPortal
 
 __all__ = [
     "available_formats",
@@ -22,4 +23,5 @@ __all__ = [
     "HTMLReporter",
     "JSONReporter",
     "MarkdownReporter",
+    "QualityPortal",
 ]

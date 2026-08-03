@@ -78,18 +78,67 @@ def _qa_ai_recorder(request: pytest.FixtureRequest):
 # ------------------------------------------------------------- analysis on failure
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo[Any]):
-    """Run AI failure analysis when a test fails during its ``call`` phase."""
+    """Run AI failure analysis when a test fails, and track pass/skip totals.
+
+    Failure analysis is unchanged; the difference is that results now feed a
+    single consolidated per-run report instead of one HTML file per test.
+    """
     outcome = yield
     report = outcome.get_result()
-    if report.when != "call" or not report.failed:
+    if not _plugin_active():
         return
-    if getattr(item, "_qa_ai_done", False) or not _plugin_active():
+
+    engine = _get_engine()
+    # Record skipped tests (reported during the setup phase).
+    if report.when == "setup" and report.skipped:
+        try:
+            engine.append_skipped(item.nodeid)
+        except Exception:  # noqa: BLE001
+            pass
+        return
+    if report.when != "call":
+        return
+    if report.passed:
+        try:
+            engine.append_success(item.nodeid)
+        except Exception:  # noqa: BLE001
+            pass
+        return
+    if not report.failed:
+        return
+    if getattr(item, "_qa_ai_done", False):
         return
     item._qa_ai_done = True  # type: ignore[attr-defined]
     try:
         _analyze(item, call, report)
     except Exception as exc:  # noqa: BLE001 - AI must never break the run
         logger.warning("AI failure analysis skipped due to error: %s", exc)
+
+
+def pytest_sessionstart(session: "pytest.Session") -> None:
+    """Open a fresh consolidated AI report for this execution."""
+    if not _plugin_active():
+        return
+    try:
+        _get_engine().begin_execution()
+    except Exception as exc:  # noqa: BLE001  # pragma: no cover
+        logger.debug("Could not start AI execution report: %s", exc)
+
+
+def pytest_sessionfinish(session: "pytest.Session", exitstatus: int) -> None:
+    """Render the single consolidated AI dashboard once the run completes."""
+    if not _plugin_active():
+        return
+    try:
+        engine = _get_engine()
+        if not engine.report_builder.has_data:
+            return
+        paths = engine.finish_execution()
+        html_path = paths.get("html")
+        if html_path is not None:
+            logger.info("AI failure-analysis dashboard: %s", html_path)
+    except Exception as exc:  # noqa: BLE001  # pragma: no cover
+        logger.debug("Could not finalise AI execution report: %s", exc)
 
 
 def _find_page(item: pytest.Item):
@@ -144,6 +193,7 @@ def _analyze(item: pytest.Item, call: pytest.CallInfo[Any], report: Any) -> None
         analysis.confidence,
         analysis.owner,
     )
+    engine.append_failure(result, nodeid=item.nodeid)
     _attach_allure(engine, result)
     _attach_html(report, engine, result)
 

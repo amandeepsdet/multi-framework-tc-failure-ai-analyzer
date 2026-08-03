@@ -28,10 +28,9 @@ from .llm_client import BaseLLMClient, get_llm_client
 from .locator_analyzer import LocatorAnalyzer
 from .models import AnalysisResult, BugReport, FailureRecord
 from .prompt_builder import PromptBuilder
-from .report_generator import ReportGenerator
+from .report_generator import ExecutionReportBuilder, ReportGenerator, get_execution_builder
 from .trend_analyzer import ReleaseReadiness, TrendAnalyzer, TrendReport
 from .visual_analyzer import VisualAnalyzer, VisualFindings
-
 logger = get_logger("ai.engine")
 
 _SAFE = re.compile(r"[^A-Za-z0-9_.-]+")
@@ -143,7 +142,6 @@ class AIEngine:
         if persist:
             stem = self._stem(record)
             outcome.history_path = self.history.save(record, analysis)
-            outcome.report_paths = self.report_gen.save(record, analysis, stem)
             outcome.bug_paths = self.bug_gen.save(bug, stem)
             self.analyzer.index(record, analysis)
         return outcome
@@ -153,6 +151,41 @@ class AIEngine:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         safe = _SAFE.sub("_", record.test_name or "unknown").strip("_")[:60]
         return f"{stamp}_{safe}"
+
+    # -------------------------------------------------- consolidated execution report
+    @property
+    def report_builder(self) -> ExecutionReportBuilder:
+        """The shared per-run consolidated-report builder (one report per run)."""
+        builder = get_execution_builder(self.cfg)
+        builder.cfg = self.cfg  # honour this engine's configured output dirs
+        return builder
+
+    def begin_execution(self, *, run_name: str = "", environment: str = "") -> None:
+        """Start a new consolidated report for the current test execution."""
+        self.report_builder.begin(run_name=run_name, environment=environment)
+
+    def append_failure(self, outcome: AnalysisOutcome, *, nodeid: str = "") -> None:
+        """Add one analysed failure to the consolidated report."""
+        try:
+            bug_md = self.bug_gen.to_markdown(outcome.bug_report)
+        except Exception:  # noqa: BLE001
+            bug_md = ""
+        self.report_builder.add_failure(
+            outcome.record, outcome.analysis,
+            nodeid=nodeid or outcome.record.test_name, bug_markdown=bug_md,
+        )
+
+    def append_success(self, nodeid: str) -> None:
+        """Record a passing test in the consolidated report."""
+        self.report_builder.add_success(nodeid)
+
+    def append_skipped(self, nodeid: str) -> None:
+        """Record a skipped test in the consolidated report."""
+        self.report_builder.add_skipped(nodeid)
+
+    def finish_execution(self) -> dict[str, Path]:
+        """Render the single consolidated AI report for the whole run (idempotent)."""
+        return self.report_builder.finish()
 
     # ----------------------------------------------------------- convenience
     def trend_report(self) -> TrendReport:

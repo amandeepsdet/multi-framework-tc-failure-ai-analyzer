@@ -147,13 +147,16 @@ class BugReportGenerator:
         )
 
     def save(self, report: BugReport, stem: str) -> dict[str, Path]:
-        """Write markdown/json/html variants and return their paths."""
+        """Write markdown/json variants and return their paths.
+
+        No standalone HTML is produced per test: the bug report is rendered inside
+        the single consolidated per-run dashboard (with copy / download actions).
+        """
         self.cfg.reports_dir.mkdir(parents=True, exist_ok=True)
         paths: dict[str, Path] = {}
         variants: dict[str, str] = {
             "md": self.to_markdown(report),
             "json": json.dumps(report.to_dict(), indent=2, ensure_ascii=False),
-            "html": self.to_html(report),
         }
         for ext, content in variants.items():
             path = self.cfg.reports_dir / f"{stem}_bug.{ext}"

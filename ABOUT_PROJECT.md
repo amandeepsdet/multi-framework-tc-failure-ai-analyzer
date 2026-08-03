@@ -14,6 +14,10 @@ transparently to an LLM when configured.
 - **Architecture:** Adapters → `FailureContext` → AI Engine → `AnalysisResult` → Reporters.
   The core has **zero** framework and **zero** application knowledge; all
   framework logic lives in swappable adapters.
+- **Quality Intelligence Platform:** `QualityPortal` aggregates every execution
+  into a historical HTML dashboard — quality score, release readiness, trends,
+  flaky detection, run comparison, and a knowledge base — with zero extra
+  dependencies.
 - **Docs:** [PACKAGE_README.md](PACKAGE_README.md) · runnable [`examples/`](examples/) · [Migration Guide](docs/MIGRATION.md).
 
 The ThingsBoard suite described below is the **reference demo project** that

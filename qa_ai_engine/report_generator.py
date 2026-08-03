@@ -9,6 +9,10 @@ from __future__ import annotations
 
 import html
 import json
+import os
+import platform
+import subprocess
+from datetime import datetime, timezone
 from importlib import metadata as _metadata
 from pathlib import Path
 from typing import Any
@@ -59,7 +63,7 @@ def _package_version() -> str:
             return _metadata.version(name)
         except _metadata.PackageNotFoundError:
             continue
-    return "3.0.0"
+    return "3.1.0"
 
 
 # Small inline SVG icon set (feather-style, stroke=currentColor). Presentation only.
@@ -881,3 +885,1005 @@ class ReportGenerator:
             except OSError as exc:  # pragma: no cover
                 logger.warning("Could not write trend report %s: %s", path, exc)
         return paths
+
+
+# =========================================================================== #
+#  Consolidated per-execution AI dashboard                                     #
+#                                                                              #
+#  ONE run  ->  ONE report  ->  many failed test cases, each with its own AI   #
+#  analysis. Presentation only: consumes the same FailureRecord /              #
+#  AnalysisResult produced by the (unchanged) analysis engine.                 #
+# =========================================================================== #
+
+_DASHBOARD_FILE_STEM = "ai_failure_analysis"
+
+
+def _git_commit() -> str:
+    """Best-effort short git SHA for the run (never raises)."""
+    env = os.getenv("GIT_COMMIT") or os.getenv("GITHUB_SHA") or os.getenv("CI_COMMIT_SHA")
+    if env:
+        return env[:10]
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=3, cwd=str(Path.cwd()),
+        )
+        if out.returncode == 0:
+            return out.stdout.strip()[:10]
+    except Exception:  # noqa: BLE001  # pragma: no cover
+        pass
+    return ""
+
+
+# Dashboard-specific layout on top of the shared _REPORT_CSS component styles.
+_DASHBOARD_CSS = """
+.dash-shell{display:grid;grid-template-columns:308px minmax(0,1fr);gap:24px;align-items:start;max-width:1560px;margin:0 auto;padding:22px 24px 64px}
+@media(max-width:1080px){.dash-shell{grid-template-columns:1fr}}
+.dash-side{position:sticky;top:78px;display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 96px)}
+@media(max-width:1080px){.dash-side{position:static;max-height:none}}
+.dash-side .card{padding:13px 14px}
+.side-title{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.side-title svg{width:15px;height:15px}
+.navlist{display:flex;flex-direction:column;gap:4px;overflow:auto;max-height:52vh;padding-right:2px}
+.nav-item{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:8px 9px;border-radius:9px;border:1px solid transparent;cursor:pointer;color:var(--text);text-decoration:none;transition:.14s}
+.nav-item:hover{background:var(--accent-soft);border-color:var(--border);text-decoration:none}
+.nav-item .st{width:9px;height:9px;border-radius:50%;flex:none}
+.nav-item .nm{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-item .sub{grid-column:2;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-item .cf{font-size:11px;font-weight:800;font-family:var(--mono)}
+.nav-empty{color:var(--muted);font-size:12.5px;padding:8px 4px}
+.side-filter{display:flex;flex-direction:column;gap:9px}
+.side-filter label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px}
+.side-filter select,.side-filter input{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px}
+.side-filter select:focus,.side-filter input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+/* main */
+.dash-main{min-width:0;display:flex;flex-direction:column;gap:22px}
+.exec-head{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 10%,var(--panel)),var(--panel));border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px}
+.exec-head h1{margin:0;font-size:20px;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.exec-head h1 .ic{width:32px;height:32px;display:grid;place-items:center;border-radius:9px;background:linear-gradient(135deg,#0969da,#8250df);color:#fff}
+.exec-sub{color:var(--muted);font-size:13px;margin:6px 0 0}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 18px;margin-top:15px;padding-top:14px;border-top:1px solid var(--border-soft)}
+.summary-grid .s-cell b{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:3px}
+.summary-grid .s-cell span{font-size:13px;font-weight:600;word-break:break-word;font-family:var(--mono)}
+.toc{display:flex;flex-wrap:wrap;gap:8px}
+.toc a{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid var(--border);border-radius:999px;background:var(--panel);font-size:12.5px;font-weight:600;color:var(--text)}
+.toc a:hover{border-color:var(--red);color:var(--red);text-decoration:none;transform:translateY(-1px)}
+.toc a .st{width:8px;height:8px;border-radius:50%}
+.controls{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.controls .searchbar{margin:0;max-width:none;flex:1;min-width:220px}
+/* failure section */
+.fsec{background:var(--panel);border:1px solid var(--border);border-left:5px solid var(--sev,#cf222e);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;scroll-margin-top:78px}
+.fsec>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:15px 18px;user-select:none}
+.fsec>summary::-webkit-details-marker{display:none}
+.fsec>summary .fx{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:9px;background:var(--red-bg);color:var(--red)}
+.fsec>summary .ft{min-width:0}
+.fsec>summary .ft h3{margin:0;font-size:15px;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fsec>summary .ft .fmeta{margin:5px 0 0;color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fsec>summary .fbadges{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.fsec>summary .chev{transition:.2s;color:var(--muted)}
+.fsec[open]>summary .chev{transform:rotate(90deg)}
+.fsec-body{padding:0 18px 18px;border-top:1px solid var(--border-soft);display:grid;gap:18px;animation:slide .25s ease}
+.fsec-body .sec-h{margin:16px 0 10px}
+.fgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+@media(max-width:820px){.fgrid{grid-template-columns:1fr}}
+.fac{display:flex;gap:7px;flex-wrap:wrap}
+.gallery-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.14);border:0;color:#fff;font-size:24px;padding:10px 16px;border-radius:10px;cursor:pointer;z-index:2}
+.gallery-nav.prev{left:18px}.gallery-nav.next{right:18px}
+.gallery-zoom{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:2}
+.gallery-zoom button{background:rgba(255,255,255,.14);border:0;color:#fff;padding:8px 14px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600}
+.modal img{transition:transform .18s ease}
+.no-fail{background:var(--green-bg);border:1px solid color-mix(in srgb,var(--green) 30%,transparent);color:var(--green);border-radius:var(--radius);padding:26px;text-align:center;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px}
+.hidden{display:none!important}
+.count-pill{background:var(--panel-2);border:1px solid var(--border);border-radius:999px;padding:1px 9px;font-size:11px;font-weight:800;color:var(--muted)}
+"""
+
+_DASHBOARD_JS = r"""
+(function(){
+  var data={};
+  try{data=JSON.parse(document.getElementById('ai-data').textContent);}catch(e){}
+  var root=document.documentElement;
+  var saved=null;try{saved=localStorage.getItem('aiqa-theme');}catch(e){}
+  if(saved){root.setAttribute('data-theme',saved);}
+  function toggleTheme(){var d=root.getAttribute('data-theme')==='dark'?'light':'dark';root.setAttribute('data-theme',d);try{localStorage.setItem('aiqa-theme',d);}catch(e){}drawCharts();}
+  var toast=document.getElementById('toast'),tt;
+  function say(m){if(!toast)return;toast.textContent=m;toast.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('on');},1700);}
+  function copyText(t,msg){t=t||'';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){say(msg||'Copied');},function(){fb(t);say(msg||'Copied');});}else{fb(t);say(msg||'Copied');}}
+  function fb(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);}
+  function dl(name,content,type){var b=new Blob([content],{type:type});var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(u);},1000);say('Downloaded '+name);}
+  function fail(id){return (data.failures&&data.failures[id])||{};}
+
+  document.addEventListener('click',function(e){
+    var c=e.target.closest('[data-copy]');
+    if(c){e.preventDefault();e.stopPropagation();var sel=c.getAttribute('data-copy');var el=sel?document.querySelector(sel):null;copyText(el?el.innerText:c.getAttribute('data-copytext')||'','Copied to clipboard');return;}
+    var t=e.target.closest('[data-action]');
+    if(t){e.preventDefault();var a=t.getAttribute('data-action');
+      if(a==='theme')toggleTheme();
+      else if(a==='print')window.print();
+      else if(a==='json')dl(data.stem+'.json',JSON.stringify(data.raw||{},null,2),'application/json');
+      else if(a==='md')dl(data.stem+'.md',data.markdown||'','text/markdown');
+      else if(a==='html')dl(data.stem+'.html','<!DOCTYPE html>\n'+document.documentElement.outerHTML,'text/html');
+      else if(a==='expandAll')document.querySelectorAll('details.fsec').forEach(function(d){d.open=true;});
+      else if(a==='collapseAll')document.querySelectorAll('details.fsec').forEach(function(d){d.open=false;});
+      return;
+    }
+    var fb2=e.target.closest('[data-fail]');
+    if(fb2){e.preventDefault();e.stopPropagation();var id=fb2.getAttribute('data-fail');var fmt=fb2.getAttribute('data-fmt');var f=fail(id);
+      if(fmt==='copybug')copyText(f.bug||'','Bug report copied');
+      else if(fmt==='md')dl((f.slug||id)+'_bug.md',f.bug||f.markdown||'','text/markdown');
+      else if(fmt==='json')dl((f.slug||id)+'.json',JSON.stringify(f.json||{},null,2),'application/json');
+      else if(fmt==='export')dl((f.slug||id)+'.json',JSON.stringify(f.json||{},null,2),'application/json');
+      return;
+    }
+    var nav=e.target.closest('.nav-item,.toc a');
+    if(nav&&nav.getAttribute('data-target')){e.preventDefault();var tgt=document.querySelector(nav.getAttribute('data-target'));if(tgt){tgt.open=true;tgt.scrollIntoView({behavior:'smooth',block:'start'});}return;}
+    var shot=e.target.closest('[data-gallery]');
+    if(shot){openGallery(shot.getAttribute('data-gallery'),parseInt(shot.getAttribute('data-idx')||'0',10));}
+  });
+
+  // ---- gallery modal (prev / next / zoom) ----
+  var modal=document.getElementById('modal'),gImg=modal?modal.querySelector('img'):null,gList=[],gIdx=0,gZoom=1;
+  function renderShot(){if(!gImg||!gList.length)return;gZoom=1;gImg.style.transform='scale(1)';gImg.src=gList[gIdx];}
+  function openGallery(gid,idx){if(!modal)return;gList=(data.galleries&&data.galleries[gid])||[];if(!gList.length)return;gIdx=Math.max(0,Math.min(idx,gList.length-1));renderShot();modal.classList.add('on');}
+  if(modal){
+    modal.addEventListener('click',function(e){if(e.target===modal||e.target.classList.contains('x'))modal.classList.remove('on');});
+    var pv=modal.querySelector('.prev'),nx=modal.querySelector('.next'),zi=modal.querySelector('[data-zoom="in"]'),zo=modal.querySelector('[data-zoom="out"]');
+    if(pv)pv.addEventListener('click',function(e){e.stopPropagation();gIdx=(gIdx-1+gList.length)%gList.length;renderShot();});
+    if(nx)nx.addEventListener('click',function(e){e.stopPropagation();gIdx=(gIdx+1)%gList.length;renderShot();});
+    if(zi)zi.addEventListener('click',function(e){e.stopPropagation();gZoom=Math.min(gZoom+0.25,4);gImg.style.transform='scale('+gZoom+')';});
+    if(zo)zo.addEventListener('click',function(e){e.stopPropagation();gZoom=Math.max(gZoom-0.25,0.5);gImg.style.transform='scale('+gZoom+')';});
+  }
+  document.addEventListener('keydown',function(e){if(!modal||!modal.classList.contains('on'))return;if(e.key==='Escape')modal.classList.remove('on');else if(e.key==='ArrowLeft'){gIdx=(gIdx-1+gList.length)%gList.length;renderShot();}else if(e.key==='ArrowRight'){gIdx=(gIdx+1)%gList.length;renderShot();}});
+
+  // ---- per-section evidence search ----
+  document.querySelectorAll('input[data-evsearch]').forEach(function(inp){
+    inp.addEventListener('input',function(){var q=inp.value.toLowerCase();var scope=document.querySelector(inp.getAttribute('data-evsearch'));if(!scope)return;var vis=0;scope.querySelectorAll('.ev').forEach(function(it){var ok=it.textContent.toLowerCase().indexOf(q)>-1;it.style.display=ok?'':'none';if(ok)vis++;});});
+  });
+
+  // ---- global search + filters ----
+  var q=document.getElementById('dashSearch');
+  var sels=['fSeverity','fCategory','fOwner','fFramework','fConfidence','fStatus'].map(function(i){return document.getElementById(i);});
+  function bucket(c){c=+c||0;return c>=85?'high':(c>=60?'medium':'low');}
+  function applyFilters(){
+    var term=(q&&q.value||'').toLowerCase();
+    var fv={};sels.forEach(function(s){if(s)fv[s.id]=s.value;});
+    var shown=0;
+    document.querySelectorAll('details.fsec').forEach(function(d){
+      var ok=true;
+      if(term&&d.textContent.toLowerCase().indexOf(term)<0)ok=false;
+      if(ok&&fv.fSeverity&&d.getAttribute('data-sev')!==fv.fSeverity)ok=false;
+      if(ok&&fv.fCategory&&d.getAttribute('data-cat')!==fv.fCategory)ok=false;
+      if(ok&&fv.fOwner&&d.getAttribute('data-owner')!==fv.fOwner)ok=false;
+      if(ok&&fv.fFramework&&d.getAttribute('data-fw')!==fv.fFramework)ok=false;
+      if(ok&&fv.fConfidence&&d.getAttribute('data-confbucket')!==fv.fConfidence)ok=false;
+      if(ok&&fv.fStatus&&d.getAttribute('data-status')!==fv.fStatus)ok=false;
+      d.classList.toggle('hidden',!ok);
+      var fid=d.id;
+      document.querySelectorAll('[data-fid="'+fid+'"]').forEach(function(x){x.classList.toggle('hidden',!ok);});
+      if(ok)shown++;
+    });
+    var em=document.getElementById('noMatch');if(em)em.classList.toggle('hidden',shown>0||!document.querySelector('details.fsec'));
+  }
+  if(q)q.addEventListener('input',applyFilters);
+  sels.forEach(function(s){if(s)s.addEventListener('change',applyFilters);});
+
+  // ---- confidence rings ----
+  document.querySelectorAll('.ring .fg').forEach(function(ring){var v=parseFloat(ring.getAttribute('data-v'))||0;var C=326.7;requestAnimationFrame(function(){setTimeout(function(){ring.style.strokeDashoffset=(C-C*v/100).toFixed(1);},120);});});
+
+  // ---- charts ----
+  var charts=[];
+  function css(n){return getComputedStyle(root).getPropertyValue(n).trim();}
+  function drawCharts(){
+    if(typeof Chart==='undefined')return;
+    Chart.defaults.font.family="'Inter','Segoe UI',sans-serif";Chart.defaults.font.size=11;
+    charts.forEach(function(c){c.destroy();});charts=[];
+    document.querySelectorAll('canvas[data-chart]').forEach(function(cv){
+      var cfg;try{cfg=JSON.parse(cv.getAttribute('data-chart'));}catch(e){return;}
+      var grid=css('--border-soft')||'#e6eaef',txt=css('--muted')||'#57606a';
+      cfg.options=cfg.options||{};cfg.options.plugins=cfg.options.plugins||{};
+      if(cfg.type!=='doughnut'){cfg.options.scales={x:{ticks:{color:txt},grid:{display:false}},y:{ticks:{color:txt,precision:0},grid:{color:grid},border:{display:false},beginAtZero:true}};}
+      cfg.options.plugins.legend=cfg.type==='doughnut'?{labels:{color:txt,boxWidth:10,usePointStyle:true,font:{size:11}},position:'bottom'}:{display:false};
+      cfg.options.plugins.tooltip={backgroundColor:'#1f2328',padding:10,cornerRadius:8,displayColors:true,boxPadding:4};
+      cfg.options.responsive=true;cfg.options.maintainAspectRatio=false;cfg.options.animation={duration:650};
+      try{charts.push(new Chart(cv,cfg));}catch(e){}
+    });
+  }
+  if(typeof Chart!=='undefined'){drawCharts();}else{
+    var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+    s.onload=drawCharts;s.onerror=function(){document.querySelectorAll('[data-chartsec]').forEach(function(x){x.style.display='none';});};document.head.appendChild(s);
+  }
+})();
+"""
+
+
+class _ExecFailure:
+    """Lightweight holder for one analysed failure within an execution."""
+
+    __slots__ = ("nodeid", "record", "analysis", "bug_markdown")
+
+    def __init__(self, nodeid: str, record: FailureRecord, analysis: AnalysisResult, bug_markdown: str = "") -> None:
+        self.nodeid = nodeid
+        self.record = record
+        self.analysis = analysis
+        self.bug_markdown = bug_markdown
+
+
+class ExecutionReportBuilder:
+    """Accumulate every result of a single run and render ONE consolidated report.
+
+    Lifecycle::
+
+        begin()  ->  add_failure()/add_success()/add_skipped()  ->  finish()
+
+    ``finish`` writes ``reports/ai_failure_analysis.{html,json,md}`` exactly once
+    (idempotent), so it is safe even if multiple pytest hook sites call it.
+    Presentation only — no new analysis is performed here.
+    """
+
+    def __init__(self, cfg: AIConfig = ai_config, report_gen: "ReportGenerator | None" = None) -> None:
+        self.cfg = cfg
+        self.report_gen = report_gen or ReportGenerator(cfg)
+        self._reset()
+
+    # ----------------------------------------------------------- lifecycle
+    def _reset(self) -> None:
+        self.failures: list[_ExecFailure] = []
+        self.passed: list[str] = []
+        self.skipped: list[str] = []
+        self._seen: set[str] = set()
+        self.start_ts: datetime | None = None
+        self.finish_ts: datetime | None = None
+        self.run_name: str = ""
+        self.env: dict[str, str] = {}
+        self._finished: bool = False
+        self._paths: dict[str, Path] = {}
+
+    def begin(self, *, run_name: str = "", environment: str = "") -> None:
+        self._reset()
+        self.start_ts = datetime.now(timezone.utc)
+        stamp = self.start_ts.strftime("%Y-%m-%d %H:%M:%S UTC")
+        self.run_name = run_name or f"Test Execution — {stamp}"
+        self.env = self._collect_env(environment)
+
+    def add_failure(
+        self, record: FailureRecord, analysis: AnalysisResult, *, nodeid: str = "", bug_markdown: str = ""
+    ) -> None:
+        key = nodeid or record.test_name
+        if key in self._seen:
+            return
+        self._seen.add(key)
+        self.failures.append(_ExecFailure(key, record, analysis, bug_markdown))
+
+    def add_success(self, nodeid: str) -> None:
+        if nodeid in self._seen:
+            return
+        self._seen.add(nodeid)
+        self.passed.append(nodeid)
+
+    def add_skipped(self, nodeid: str) -> None:
+        if nodeid in self._seen:
+            return
+        self._seen.add(nodeid)
+        self.skipped.append(nodeid)
+
+    def finish(self) -> dict[str, Path]:
+        if self._finished:
+            return self._paths
+        self.finish_ts = datetime.now(timezone.utc)
+        self._finished = True
+        self._paths = self._render()
+        return self._paths
+
+    @property
+    def has_data(self) -> bool:
+        return bool(self._seen)
+
+    # ------------------------------------------------------------- helpers
+    @staticmethod
+    def _collect_env(environment: str) -> dict[str, str]:
+        return {
+            "framework": "multi-framework-tc-failure-ai-analyzer",
+            "environment": environment or os.getenv("TEST_ENV", "") or os.getenv("ENVIRONMENT", "") or "local",
+            "os": platform.platform(),
+            "python": platform.python_version(),
+            "package": _package_version(),
+            "commit": _git_commit(),
+        }
+
+    def _duration_s(self) -> float:
+        if self.start_ts and self.finish_ts:
+            return max(0.0, (self.finish_ts - self.start_ts).total_seconds())
+        return 0.0
+
+    def _browser(self) -> str:
+        for f in self.failures:
+            if f.record.metadata.browser:
+                return f.record.metadata.browser
+        return ""
+
+    def _counts(self) -> dict[str, Any]:
+        total = len(self._seen)
+        failed = len(self.failures)
+        passed = len(self.passed)
+        skipped = len(self.skipped)
+        sev_count = {"Blocker": 0, "Critical": 0, "Major": 0, "Minor": 0, "Trivial": 0}
+        confs: list[int] = []
+        cats: set[str] = set()
+        owners: set[str] = set()
+        for f in self.failures:
+            sev_count[f.analysis.severity.value] = sev_count.get(f.analysis.severity.value, 0) + 1
+            confs.append(int(f.analysis.confidence))
+            cats.add(f.analysis.category.value)
+            if f.analysis.owner:
+                owners.add(f.analysis.owner)
+        avg_conf = round(sum(confs) / len(confs)) if confs else 0
+        return {
+            "total": total,
+            "passed": passed,
+            "failed": failed,
+            "skipped": skipped,
+            "pass_rate": round((passed / total) * 100) if total else 100,
+            "critical": sev_count["Blocker"] + sev_count["Critical"],
+            "high": sev_count["Major"],
+            "medium": sev_count["Minor"],
+            "low": sev_count["Trivial"],
+            "avg_confidence": avg_conf,
+            "unique_categories": len(cats),
+            "unique_owners": len(owners),
+            "severity_breakdown": sev_count,
+        }
+
+    @staticmethod
+    def _slug(text: str, n: int = 60) -> str:
+        return ("".join(c if c.isalnum() else "_" for c in (text or "test")).strip("_"))[:n] or "test"
+
+    # -------------------------------------------------------------- render
+    def _render(self) -> dict[str, Path]:
+        self.cfg.dashboard_dir.mkdir(parents=True, exist_ok=True)
+        html_doc, payload = self._render_html()
+        variants = {
+            "html": html_doc,
+            "json": json.dumps(payload, indent=2, ensure_ascii=False),
+            "md": self._render_markdown(),
+        }
+        paths: dict[str, Path] = {}
+        for ext, content in variants.items():
+            path = self.cfg.dashboard_dir / f"{_DASHBOARD_FILE_STEM}.{ext}"
+            try:
+                path.write_text(content, encoding="utf-8")
+                paths[ext] = path
+            except OSError as exc:  # pragma: no cover
+                logger.warning("Could not write consolidated report %s: %s", path, exc)
+        logger.info(
+            "Consolidated AI report written to %s (%d failed / %d total)",
+            paths.get("html", self.cfg.dashboard_dir),
+            len(self.failures),
+            len(self._seen),
+        )
+        return paths
+
+    def _render_markdown(self) -> str:
+        c = self._counts()
+        gen = (self.finish_ts or datetime.now(timezone.utc)).strftime("%Y-%m-%d %H:%M:%S UTC")
+        lines = [
+            f"# AI Failure Analysis — {self.run_name}",
+            "",
+            "## Execution Summary",
+            f"- **Framework:** {self.env.get('framework')}",
+            f"- **Environment:** {self.env.get('environment')}",
+            f"- **Browser:** {self._browser() or 'n/a'}",
+            f"- **OS:** {self.env.get('os')}",
+            f"- **Python:** {self.env.get('python')}",
+            f"- **Package Version:** v{self.env.get('package')}",
+            f"- **Commit:** {self.env.get('commit') or 'n/a'}",
+            f"- **Total Tests:** {c['total']}",
+            f"- **Passed:** {c['passed']}",
+            f"- **Failed:** {c['failed']}",
+            f"- **Skipped:** {c['skipped']}",
+            f"- **Pass Rate:** {c['pass_rate']}%",
+            f"- **Execution Duration:** {self._duration_s():.2f}s",
+            f"- **Average Confidence:** {c['avg_confidence']}%",
+            f"- **Generation Time:** {gen}",
+            "",
+        ]
+        if not self.failures:
+            lines.append("_No failures analysed — all tests passed._")
+            return "\n".join(lines)
+        lines.append("## Failed Tests")
+        lines.append("")
+        for i, f in enumerate(self.failures, 1):
+            lines.append(f"{i}. ❌ **{f.record.test_name}** — {f.analysis.category.value} "
+                         f"({f.analysis.severity.value}, {f.analysis.confidence}%)")
+        lines.append("")
+        for f in self.failures:
+            lines.append("---")
+            lines.append("")
+            lines.append(self.report_gen.to_markdown(f.record, f.analysis))
+            lines.append("")
+        return "\n".join(lines)
+
+    # ---- HTML ----
+    def _render_html(self) -> tuple[str, dict[str, Any]]:
+        esc = html.escape
+        ic = _ICONS
+        c = self._counts()
+        gen = (self.finish_ts or datetime.now(timezone.utc)).strftime("%Y-%m-%d %H:%M:%S UTC")
+        pkg = self.env.get("package", _package_version())
+
+        # ---------- header + execution summary ----------
+        def scell(label: str, value: str) -> str:
+            return f"<div class='s-cell'><b>{esc(label)}</b><span>{esc(value or 'n/a')}</span></div>"
+
+        summary_cells = "".join([
+            scell("Run Name", self.run_name),
+            scell("Framework", self.env.get("framework", "")),
+            scell("Environment", self.env.get("environment", "")),
+            scell("Browser", self._browser()),
+            scell("Operating System", self.env.get("os", "")),
+            scell("Python", self.env.get("python", "")),
+            scell("Package", f"v{pkg}"),
+            scell("Commit", self.env.get("commit", "")),
+            scell("Total Tests", str(c["total"])),
+            scell("Passed", str(c["passed"])),
+            scell("Failed", str(c["failed"])),
+            scell("Skipped", str(c["skipped"])),
+            scell("Pass Rate", f"{c['pass_rate']}%"),
+            scell("Execution Duration", f"{self._duration_s():.2f}s"),
+            scell("AI Engine", self.cfg.provider),
+            scell("Generation Time", gen),
+        ])
+        exec_head = (
+            "<div class='exec-head'><h1><span class='ic'>" + ic["robot"] + "</span>"
+            + esc(self.run_name) + "</h1>"
+            "<p class='exec-sub'>Consolidated AI failure-analysis dashboard for this test execution — "
+            "one report covering every failed test case.</p>"
+            "<div class='summary-grid'>" + summary_cells + "</div></div>"
+        )
+
+        # ---------- KPI dashboard ----------
+        def kpi(icon_key: str, label: str, value: str, desc: str, color: str) -> str:
+            return (
+                f"<div class='kpi' style='border-left-color:{color}'>"
+                f"<div class='k-top'>{ic.get(icon_key, '')}{esc(label)}</div>"
+                f"<div class='k-val' style='color:{color}'>{esc(value)}</div>"
+                f"<div class='k-desc'>{esc(desc)}</div></div>"
+            )
+
+        kpis = "".join([
+            kpi("chip", "Total Tests", str(c["total"]), "Executed this run", "#0969da"),
+            kpi("check", "Passed", str(c["passed"]), f"{c['pass_rate']}% pass rate", "#1a7f37"),
+            kpi("warning", "Failed", str(c["failed"]), "Analysed by AI", "#cf222e"),
+            kpi("clock", "Skipped", str(c["skipped"]), "Not executed", "#8b949e"),
+            kpi("warning", "Critical Failures", str(c["critical"]), "Blocker + Critical", "#b30000"),
+            kpi("warning", "High", str(c["high"]), "Major severity", "#bc4c00"),
+            kpi("warning", "Medium", str(c["medium"]), "Minor severity", "#9a6700"),
+            kpi("warning", "Low", str(c["low"]), "Trivial severity", "#0969da"),
+            kpi("gauge", "Avg Confidence", f"{c['avg_confidence']}%", "Across failures", "#8250df"),
+            kpi("tag", "Categories", str(c["unique_categories"]), "Distinct root causes", "#bc4c00"),
+            kpi("user", "Owners", str(c["unique_owners"]), "Teams to route", "#1a7f37"),
+        ])
+        kpi_sec = "<section><div class='kpis'>" + kpis + "</div></section>"
+
+        # ---------- charts ----------
+        charts_sec = self._charts_html(c)
+
+        # ---------- failure sections + nav + toc ----------
+        nav_items: list[str] = []
+        toc_items: list[str] = []
+        sections: list[str] = []
+        payload_failures: dict[str, Any] = {}
+        galleries: dict[str, list[str]] = {}
+        owners_set: list[str] = []
+        cats_set: list[str] = []
+        fw_set: list[str] = []
+
+        for idx, f in enumerate(self.failures, 1):
+            fid = f"f{idx}"
+            built = self._failure_section(f, fid, idx)
+            nav_items.append(built["nav"])
+            toc_items.append(built["toc"])
+            sections.append(built["section"])
+            payload_failures[fid] = built["payload"]
+            if built["gallery"]:
+                galleries[fid] = built["gallery"]
+            if f.analysis.owner and f.analysis.owner not in owners_set:
+                owners_set.append(f.analysis.owner)
+            if f.analysis.category.value not in cats_set:
+                cats_set.append(f.analysis.category.value)
+            fw = f.record.metadata.framework_version or "unknown"
+            if fw not in fw_set:
+                fw_set.append(fw)
+
+        if self.failures:
+            toc = (
+                "<section><h2 class='sec-h'><span class='si'>" + ic["flow"] + "</span>Failure Navigator"
+                "<span class='count-pill' style='margin-left:8px'>" + str(len(self.failures)) + "</span></h2>"
+                "<div class='card'><div class='toc'>" + "".join(toc_items) + "</div></div></section>"
+            )
+            main_sections = (
+                "<section><h2 class='sec-h'><span class='si'>" + ic["bug"] + "</span>Failure Analysis</h2>"
+                + "".join(sections)
+                + "<div id='noMatch' class='empty hidden'>No failures match your search / filters.</div></section>"
+            )
+        else:
+            toc = ""
+            main_sections = (
+                "<div class='no-fail'>" + ic["check"] + "All executed tests passed — no AI failure analysis required.</div>"
+            )
+
+        # ---------- left sidebar ----------
+        def opts(values: list[str]) -> str:
+            return "".join(f"<option value='{esc(v)}'>{esc(v)}</option>" for v in values)
+
+        sev_values = [s for s in ("Blocker", "Critical", "Major", "Minor", "Trivial")
+                      if self._counts()["severity_breakdown"].get(s)]
+        sidebar = (
+            "<aside class='dash-side'>"
+            "<div class='card'>"
+            "<div class='side-title'>" + ic["bug"] + "Failed Tests <span class='count-pill' style='margin-left:auto'>"
+            + str(len(self.failures)) + "</span></div>"
+            "<div class='navlist'>"
+            + ("".join(nav_items) if nav_items else "<div class='nav-empty'>No failures 🎉</div>")
+            + "</div></div>"
+            "<div class='card side-filter'>"
+            "<div class='side-title'>" + ic["search"] + "Filters</div>"
+            "<div><label>Severity</label><select id='fSeverity'><option value=''>All</option>" + opts(sev_values) + "</select></div>"
+            "<div><label>Category</label><select id='fCategory'><option value=''>All</option>" + opts(cats_set) + "</select></div>"
+            "<div><label>Owner</label><select id='fOwner'><option value=''>All</option>" + opts(owners_set) + "</select></div>"
+            "<div><label>Framework</label><select id='fFramework'><option value=''>All</option>" + opts(fw_set) + "</select></div>"
+            "<div><label>Confidence</label><select id='fConfidence'><option value=''>All</option>"
+            "<option value='high'>High (85%+)</option><option value='medium'>Medium (60-84%)</option><option value='low'>Low (&lt;60%)</option></select></div>"
+            "<div><label>Status</label><select id='fStatus'><option value=''>All</option><option value='failed'>Failed</option></select></div>"
+            "</div></aside>"
+        )
+
+        # ---------- toolbar / controls ----------
+        toolbar = (
+            "<div class='toolbar'>"
+            "<button class='btn' data-action='expandAll' type='button'>" + ic["search"] + "Expand All</button>"
+            "<button class='btn' data-action='collapseAll' type='button'>" + ic["tag"] + "Collapse All</button>"
+            "<button class='btn' data-action='html' type='button'>" + ic["download"] + "Export Report</button>"
+            "<button class='btn' data-action='json' type='button'>" + ic["code"] + "JSON</button>"
+            "<button class='btn' data-action='md' type='button'>" + ic["doc"] + "Markdown</button>"
+            "<button class='btn' data-action='print' type='button'>" + ic["print"] + "Print</button>"
+            "<button class='btn icon' id='themeBtn' data-action='theme' type='button' aria-label='Toggle theme'>"
+            + ic["moon"] + "</button>"
+            "</div>"
+        )
+        controls = (
+            "<section><div class='controls'>"
+            "<div class='searchbar'>" + ic["search"] +
+            "<input id='dashSearch' type='search' placeholder='Search test, root cause, evidence, owner, exception…' "
+            "aria-label='Global search'></div>" + toolbar + "</div></section>"
+        )
+
+        header = (
+            "<header class='top'><div class='top-in'><div class='top-row'>"
+            "<div class='brand'><span class='ic'>" + ic["robot"] + "</span>AI Failure Analysis Dashboard</div>"
+            + ("<span class='badge fail'>" + ic["warning"] + str(len(self.failures)) + " FAILED</span>"
+               if self.failures else "<span class='badge' style='background:var(--green-bg);color:var(--green)'>"
+               + ic["check"] + "ALL PASSED</span>")
+            + "<div class='spacer'></div>"
+            "<span class='chip'>" + ic["chip"] + "Total&nbsp;<b>" + str(c["total"]) + "</b></span>"
+            "<span class='chip'>" + ic["gauge"] + "Pass&nbsp;<b>" + str(c["pass_rate"]) + "%</b></span>"
+            "</div></div></header>"
+        )
+
+        # ---------- data island ----------
+        payload = self._json_payload(c, gen, payload_failures)
+        island = {
+            "stem": _DASHBOARD_FILE_STEM,
+            "markdown": self._render_markdown(),
+            "failures": {
+                fid: {
+                    "slug": pf["slug"], "bug": pf["bug"], "markdown": pf["markdown"], "json": pf["json"],
+                } for fid, pf in payload_failures.items()
+            },
+            "galleries": galleries,
+            "raw": payload,
+        }
+        data_json = json.dumps(island, ensure_ascii=False).replace("<", "\\u003c")
+
+        modal = (
+            "<div class='modal' id='modal' role='dialog' aria-modal='true'>"
+            "<button class='x' aria-label='Close'>&times;</button>"
+            "<button class='gallery-nav prev' aria-label='Previous'>&#8249;</button>"
+            "<button class='gallery-nav next' aria-label='Next'>&#8250;</button>"
+            "<img src='' alt='Screenshot'>"
+            "<div class='gallery-zoom'><button data-zoom='out' type='button'>&minus; Zoom</button>"
+            "<button data-zoom='in' type='button'>+ Zoom</button></div></div>"
+        )
+
+        body = (
+            header + controls +
+            "<div class='dash-shell'>" + sidebar +
+            "<div class='dash-main'>" + exec_head + kpi_sec + charts_sec + toc + main_sections +
+            "<footer><div class='fl'>" + ic["robot"] +
+            "Generated by <b>&nbsp;multi-framework-tc-failure-ai-analyzer</b>&nbsp;· v" + esc(pkg) +
+            "&nbsp;· " + esc(gen) + "</div><div class='fl'>"
+            "<a href='https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer' target='_blank' rel='noopener'>" + ic["git"] + "GitHub</a>"
+            "</div></footer></div></div>"
+            + modal +
+            "<div class='toast' id='toast' role='status' aria-live='polite'></div>"
+            f"<script id='ai-data' type='application/json'>{data_json}</script>"
+            f"<script>{_DASHBOARD_JS}</script>"
+        )
+
+        doc = (
+            "<!DOCTYPE html><html lang='en' data-theme='light'><head><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+            f"<title>AI Failure Analysis — {esc(self.run_name)}</title>"
+            "<link rel='preconnect' href='https://fonts.googleapis.com'>"
+            "<link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap' rel='stylesheet'>"
+            f"<style>{_REPORT_CSS}{_DASHBOARD_CSS}</style></head><body>"
+            + body + "</body></html>"
+        )
+        return doc, payload
+
+    def _json_payload(self, c: dict[str, Any], gen: str, payload_failures: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "run": {
+                "run_name": self.run_name,
+                "framework": self.env.get("framework"),
+                "environment": self.env.get("environment"),
+                "browser": self._browser(),
+                "os": self.env.get("os"),
+                "python": self.env.get("python"),
+                "package_version": self.env.get("package"),
+                "commit": self.env.get("commit"),
+                "ai_engine": self.cfg.provider,
+                "started": self.start_ts.isoformat() if self.start_ts else None,
+                "finished": self.finish_ts.isoformat() if self.finish_ts else None,
+                "duration_s": round(self._duration_s(), 3),
+                "generated": gen,
+            },
+            "summary": {k: v for k, v in c.items() if k != "severity_breakdown"},
+            "severity_breakdown": c["severity_breakdown"],
+            "failures": [pf["json"] for pf in payload_failures.values()],
+            "passed": self.passed,
+            "skipped": self.skipped,
+        }
+
+    def _charts_html(self, c: dict[str, Any]) -> str:
+        ic = _ICONS
+        if not self.failures:
+            return ""
+        cat_counts: dict[str, int] = {}
+        owner_counts: dict[str, int] = {}
+        conf_buckets = {"High (85%+)": 0, "Medium (60-84%)": 0, "Low (<60%)": 0}
+        for f in self.failures:
+            cat_counts[f.analysis.category.value] = cat_counts.get(f.analysis.category.value, 0) + 1
+            owner = f.analysis.owner or "Unassigned"
+            owner_counts[owner] = owner_counts.get(owner, 0) + 1
+            cf = int(f.analysis.confidence)
+            conf_buckets["High (85%+)" if cf >= 85 else "Medium (60-84%)" if cf >= 60 else "Low (<60%)"] += 1
+        sev = c["severity_breakdown"]
+        sev_labels = [s for s in ("Blocker", "Critical", "Major", "Minor", "Trivial") if sev.get(s)]
+        sev_colors = {"Blocker": "#b30000", "Critical": "#cf222e", "Major": "#bc4c00", "Minor": "#9a6700", "Trivial": "#0969da"}
+        palette = ["#4c9be8", "#8b7ff0", "#3fb6a8", "#f0a35e", "#e86a8f", "#6ac26a", "#c99bf0", "#f0c95e"]
+
+        def doughnut(labels: list[str], values: list[int], colors: list[str]) -> str:
+            return json.dumps({
+                "type": "doughnut",
+                "data": {"labels": labels, "datasets": [{"data": values, "backgroundColor": colors, "borderWidth": 0, "hoverOffset": 4}]},
+                "options": {"cutout": "62%"},
+            })
+
+        def bar(labels: list[str], values: list[int], color: Any) -> str:
+            return json.dumps({
+                "type": "bar",
+                "data": {"labels": labels, "datasets": [{"label": "Count", "data": values,
+                         "backgroundColor": color, "borderRadius": 7, "maxBarThickness": 44}]},
+                "options": {"plugins": {"legend": {"display": False}}},
+            })
+
+        cat_chart = doughnut(list(cat_counts.keys()), list(cat_counts.values()), palette[: len(cat_counts)])
+        sev_chart = doughnut(sev_labels, [sev[s] for s in sev_labels], [sev_colors[s] for s in sev_labels])
+        conf_chart = bar(list(conf_buckets.keys()), list(conf_buckets.values()), ["#1a7f37", "#9a6700", "#cf222e"])
+        owner_chart = bar(list(owner_counts.keys()), list(owner_counts.values()), palette[: len(owner_counts)])
+
+        def card(title: str, icon_key: str, chart: str, color: str) -> str:
+            return (
+                "<div class='card' style='border-left:4px solid " + color + "'>"
+                "<div class='k-top'>" + ic.get(icon_key, "") + html.escape(title) + "</div>"
+                "<div class='chartbox'><canvas data-chart='" + html.escape(chart) + "'></canvas></div></div>"
+            )
+
+        return (
+            "<section data-chartsec><h2 class='sec-h'><span class='si'>" + ic["gauge"] + "</span>Execution Insights</h2>"
+            "<div class='kpis'>"
+            + card("Failure Categories", "tag", cat_chart, "#4c9be8")
+            + card("Severity Distribution", "warning", sev_chart, "#cf222e")
+            + card("Confidence Distribution", "gauge", conf_chart, "#8250df")
+            + card("Owner Distribution", "user", owner_chart, "#1a7f37")
+            + "</div></section>"
+        )
+
+    # ---- one failure section (isolated) ----
+    def _failure_section(self, f: _ExecFailure, fid: str, idx: int) -> dict[str, Any]:
+        esc = html.escape
+        ic = _ICONS
+        a, r = f.analysis, f.record
+        m, ev = r.metadata, r.evidence
+        sev = a.severity.value
+        sev_color, sev_bg, sev_label, priority = _severity_meta(sev)
+        conf = int(a.confidence)
+        conf_color = _confidence_color(conf)
+        conf_bucket = "high" if conf >= 85 else "medium" if conf >= 60 else "low"
+        slug = self._slug(r.test_name)
+        _uid = {"n": 0}
+
+        def nid() -> str:
+            _uid["n"] += 1
+            return f"{fid}c{_uid['n']}"
+
+        def code_block(text: str, max_h: str = "") -> str:
+            cid = nid()
+            style = f" style='max-height:{max_h}'" if max_h else ""
+            return (
+                "<div class='codewrap'>"
+                f"<button class='btn copy-btn' data-copy='#{cid}' type='button'>{ic['copy']}Copy</button>"
+                f"<pre class='code' id='{cid}'{style}>{esc(text)}</pre></div>"
+            )
+
+        def acc(icon_key: str, title: str, count: str, inner: str, is_open: bool = False) -> str:
+            cnt = f"<span class='tag-count'>{esc(count)}</span>" if count else ""
+            return (
+                f"<details class='ev'{' open' if is_open else ''}>"
+                f"<summary><span class='ei'>{ic.get(icon_key, '')}</span>{esc(title)}{cnt}"
+                f"<span class='chev'>&#8250;</span></summary>"
+                f"<div class='ev-body'>{inner}</div></details>"
+            )
+
+        exec_time = f"{m.execution_time_s:.2f}s" if m.execution_time_s is not None else ""
+        commit = (m.git_commit or "")[:10]
+        actual = ev.exception_message or ev.assertion_message or a.root_cause or r.failure
+
+        # ring
+        ring = (
+            "<div class='ring' role='img' aria-label='Confidence " + str(conf) + " percent'>"
+            "<svg viewBox='0 0 118 118'><circle class='bg' cx='59' cy='59' r='52'></circle>"
+            f"<circle class='fg' cx='59' cy='59' r='52' data-v='{conf}' style='--ring:{conf_color}'></circle></svg>"
+            f"<div class='num' style='color:{conf_color}'>{conf}%<small>CONFIDENCE</small></div></div>"
+        )
+
+        rc_badges = "".join([
+            f"<span class='pill' style='background:{sev_bg};color:{sev_color};border-color:{sev_color}'>{ic['warning']}{esc(sev_label)} · {esc(sev)}</span>",
+            f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['tag']}{esc(a.category.value)}</span>",
+            f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['user']}{esc(a.owner or 'Unassigned')}</span>",
+            f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['brain']}{esc(a.source)}</span>",
+        ])
+        root_cause = (
+            "<h4 class='sec-h'><span class='si'>" + ic["warning"] + "</span>AI Summary &amp; Root Cause</h4>"
+            f"<div class='card rc' style='--sev:{sev_color}'>{ring}"
+            "<div class='rc-body'><h2>" + esc(a.root_cause or "Root cause not determined") + "</h2>"
+            f"<p>{esc(a.reasoning)}</p><div class='rc-badges'>{rc_badges}</div>"
+            "<div class='rc-fix'>" + ic["bulb"] + "<span><b>Suggested fix:</b> "
+            + esc(a.recommended_fix or "n/a") + "</span></div></div></div>"
+        )
+
+        # evidence accordions
+        ev_cards: list[str] = []
+        if a.evidence:
+            inner = "<ul style='margin:6px 0 0;padding-left:18px'>" + "".join(
+                f"<li>{esc(str(x))}</li>" for x in a.evidence
+            ) + "</ul>"
+            ev_cards.append(acc("brain", "AI Evidence Signals", str(len(a.evidence)), inner, True))
+        if ev.exception_type or ev.exception_message:
+            ev_cards.append(acc("warning", "Exception", ev.exception_type or "",
+                                code_block(f"{ev.exception_type}: {ev.exception_message}".strip(": "))))
+        if ev.assertion_message:
+            ev_cards.append(acc("check", "Assertion", "", code_block(ev.assertion_message)))
+        if ev.stacktrace:
+            ev_cards.append(acc("code", "Stacktrace", "", code_block(ev.stacktrace, "420px")))
+        if ev.network:
+            rows = "".join(
+                "<tr><td class='mono'>" + esc(str(n.get("method", ""))) + "</td>"
+                "<td class='mono' style='word-break:break-all'>" + esc(str(n.get("url", ""))) + "</td>"
+                "<td class='mono'>" + esc(str(n.get("status", ""))) + "</td>"
+                "<td class='mono'>" + (f"{n.get('duration_ms')}ms" if n.get("duration_ms") is not None else "") + "</td></tr>"
+                for n in ev.network
+            )
+            ev_cards.append(acc("network", "Network Requests", str(len(ev.network)),
+                                "<div class='tbl-wrap'><table class='data'><thead><tr><th>Method</th><th>URL</th>"
+                                "<th>Status</th><th>Duration</th></tr></thead><tbody>" + rows + "</tbody></table></div>"))
+        if ev.api_responses:
+            ev_cards.append(acc("network", "API Responses", str(len(ev.api_responses)),
+                                code_block(json.dumps(ev.api_responses, indent=2, ensure_ascii=False), "360px")))
+        if ev.console_logs:
+            ev_cards.append(acc("terminal", "Console Logs", str(len(ev.console_logs)),
+                                code_block(json.dumps(ev.console_logs, indent=2, ensure_ascii=False), "300px")))
+        if ev.dom:
+            dom = ev.dom if len(ev.dom) <= 6000 else ev.dom[:6000] + "\n… (truncated)"
+            ev_cards.append(acc("code", "DOM Snapshot", f"{len(ev.dom)} chars", code_block(dom, "360px")))
+        if not ev_cards:
+            ev_cards.append("<div class='empty'>No raw evidence signals were captured for this failure.</div>")
+        evsearch_scope = f"#{fid}ev"
+        evidence_sec = (
+            "<h4 class='sec-h'><span class='si'>" + ic["search"] + "</span>Evidence</h4>"
+            "<div class='searchbar'>" + ic["search"] +
+            f"<input type='search' placeholder='Search evidence…' data-evsearch='{evsearch_scope}' aria-label='Search evidence'></div>"
+            f"<div id='{fid}ev'>" + "".join(ev_cards) + "</div>"
+        )
+
+        # screenshots
+        gallery: list[str] = []
+        screenshots_sec = ""
+        if ev.screenshot:
+            gallery.append(ev.screenshot)
+            src = esc(ev.screenshot)
+            screenshots_sec = (
+                "<h4 class='sec-h'><span class='si'>" + ic["camera"] + "</span>Screenshots</h4>"
+                "<div class='shots'><div class='shot' data-gallery='" + fid + "' data-idx='0' tabindex='0' role='button' "
+                "aria-label='Open screenshot gallery'><img src='" + src + "' alt='Failure screenshot' "
+                "onerror=\"this.closest('.shot').style.display='none'\">"
+                "<div class='cap'>Click to open gallery · zoom · prev / next</div></div></div>"
+            )
+
+        # suggested fix
+        prevent = f"Add a regression guard for this {a.category.value} scenario and alert when similar signals recur in future runs."
+        why = (f"Directly targets the {a.category.value.lower()} root cause: {a.root_cause}"
+               if a.root_cause else f"Directly targets the {a.category.value.lower()} failure class.")
+        fix_sec = (
+            "<h4 class='sec-h'><span class='si'>" + ic["bulb"] + "</span>Suggested Fix &amp; Prevention</h4>"
+            "<div class='card rec'><div class='rec-head'><span class='rec-ic'>" + ic["bulb"] + "</span>"
+            "<div><h3>Recommended Fix</h3><p class='rec-primary'>"
+            + esc(a.recommended_fix or "No specific fix recommended.") + "</p></div></div>"
+            "<div class='rec-grid'>"
+            "<div><b>Why this works</b><p>" + esc(why) + "</p></div>"
+            "<div><b>Preventive action</b><p>" + esc(prevent) + "</p></div>"
+            "</div></div>"
+        )
+
+        # bug report
+        bug_title = f"[{sev_label}] {r.test_name} — {a.category.value}"
+        bug_env_parts = [p for p in [m.environment, m.browser, m.os, m.framework_version,
+                         (f"Python {m.python_version}" if m.python_version else "")] if p]
+        bug_env_full = " · ".join(bug_env_parts)
+        bug_steps = [f"Execute test: {r.test_name}", "Observe the reported failure below"]
+        bug_md = f.bug_markdown or ReportGenerator._bug_markdown(
+            bug_title, a, r, actual, bug_env_full, priority, sev_label, bug_steps
+        )
+        bug_grid = (
+            "<table class='kv'>"
+            f"<tr><td>Title</td><td><b>{esc(bug_title)}</b></td></tr>"
+            f"<tr><td>Severity</td><td><span class='pill' style='background:{sev_bg};color:{sev_color}'>{esc(sev_label)} · {esc(sev)}</span></td></tr>"
+            f"<tr><td>Priority</td><td>{esc(priority)}</td></tr>"
+            f"<tr><td>Owner</td><td>{esc(a.owner or 'Unassigned')}</td></tr>"
+            f"<tr><td>Category</td><td>{esc(a.category.value)}</td></tr>"
+            f"<tr><td>Environment</td><td>{esc(bug_env_full or 'n/a')}</td></tr>"
+            f"<tr><td>Description</td><td>{esc(a.root_cause or r.failure)}</td></tr>"
+            f"<tr><td>Expected</td><td>Test completes successfully with no errors.</td></tr>"
+            f"<tr><td>Actual</td><td>{esc(actual)}</td></tr>"
+            f"<tr><td>Suggested Fix</td><td>{esc(a.recommended_fix)}</td></tr>"
+            "</table>"
+        )
+        bug_sec = (
+            "<h4 class='sec-h'><span class='si'>" + ic["bug"] + "</span>Generated Bug Report"
+            "<span class='fac' style='margin-left:auto'>"
+            f"<button class='btn' data-fail='{fid}' data-fmt='copybug' type='button'>{ic['copy']}Copy Bug</button>"
+            f"<button class='btn' data-fail='{fid}' data-fmt='md' type='button'>{ic['doc']}Markdown</button>"
+            f"<button class='btn' data-fail='{fid}' data-fmt='json' type='button'>{ic['code']}JSON</button>"
+            "</span></h4><div class='card'>" + bug_grid + "</div>"
+        )
+
+        # similar failures
+        similar_sec = ""
+        if a.similar_failures:
+            sim_rows = ""
+            for s in a.similar_failures:
+                name = esc(str(s.get("test_name", "?")))
+                cat = esc(str(s.get("category", "?")))
+                sim = int(s.get("similarity", 0) or 0)
+                sconf = s.get("confidence")
+                sconf_txt = f"{sconf}%" if sconf is not None else "—"
+                sim_rows += (
+                    "<tr><td class='mono'>" + name + "</td>"
+                    "<td><div style='display:flex;align-items:center;gap:8px'><div class='simbar'>"
+                    f"<span style='width:{sim}%'></span></div>{sim}%</div></td>"
+                    f"<td>{cat}</td><td>{esc(sconf_txt)}</td></tr>"
+                )
+            similar_sec = (
+                "<h4 class='sec-h'><span class='si'>" + ic["history"] + "</span>Similar Failures</h4>"
+                "<div class='tbl-wrap'><table class='data'><thead><tr><th>Test</th><th>Similarity</th>"
+                "<th>Category</th><th>Confidence</th></tr></thead><tbody>" + sim_rows + "</tbody></table></div>"
+            )
+
+        # timeline
+        tl_time = (r.timestamp or "").replace("T", " ")[:19]
+        timeline_sec = (
+            "<h4 class='sec-h'><span class='si'>" + ic["flow"] + "</span>Failure Timeline</h4>"
+            "<div class='card timeline'>"
+            "<div class='tl'><span class='dot'></span><div><h4>Test Started</h4><p>" + esc(r.test_name) + "</p></div></div>"
+            "<div class='tl'><span class='dot'></span><div><h4>Execution</h4><p>" + esc(m.environment or "Test steps executed") + (f" · {exec_time}" if exec_time else "") + "</p></div></div>"
+            "<div class='tl fail'><span class='dot'></span><div><h4>Failure Detected</h4><p>" + esc((ev.exception_type + ": " if ev.exception_type else "") + (actual or "")) + "</p></div></div>"
+            "<div class='tl ai'><span class='dot'></span><div><h4>AI Analysis</h4><p>" + esc(a.category.value) + f" · {conf}% · via " + esc(a.source) + "</p></div></div>"
+            "<div class='tl done'><span class='dot'></span><div><h4>Report Generated</h4><p>" + esc(tl_time or "just now") + "</p></div></div>"
+            "</div>"
+        )
+
+        # metadata sidebar (per-failure)
+        def mrow(label: str, value: str) -> str:
+            if not value:
+                return ""
+            return f"<div class='meta-row'><span class='l'>{esc(label)}</span><span class='v'>{esc(value)}</span></div>"
+
+        meta_card = (
+            "<div class='card'><h3>" + ic["chip"] + "Execution Metadata</h3>"
+            + mrow("Test", r.test_name)
+            + mrow("Framework", m.framework_version)
+            + mrow("Browser", m.browser)
+            + mrow("Environment", m.environment)
+            + mrow("Operating System", m.os)
+            + mrow("Python", m.python_version)
+            + mrow("Commit", commit)
+            + mrow("Execution Time", exec_time)
+            + mrow("Timestamp", tl_time)
+            + mrow("Record ID", (r.record_id or "")[:18])
+            + "</div>"
+        )
+
+        left_col = root_cause + evidence_sec + screenshots_sec + fix_sec + bug_sec + similar_sec
+        right_col = "<aside class='side'>" + meta_card + timeline_sec + "</aside>"
+
+        # summary line for the collapsible header
+        fmeta = " · ".join(p for p in [a.category.value, a.owner or "Unassigned",
+                            (exec_time or ""), (m.browser or "")] if p)
+        header_badges = (
+            f"<span class='pill' style='background:{sev_bg};color:{sev_color}'>{esc(sev_label)}</span>"
+            f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['gauge']}{conf}%</span>"
+            f"<span class='chev'>{ic['tag'] and ''}&#8250;</span>"
+        )
+
+        section = (
+            f"<details class='fsec' id='{fid}' style='--sev:{sev_color}' "
+            f"data-sev='{esc(sev)}' data-cat='{esc(a.category.value)}' data-owner='{esc(a.owner or 'Unassigned')}' "
+            f"data-fw='{esc(m.framework_version or 'unknown')}' data-confbucket='{conf_bucket}' data-status='failed'>"
+            "<summary><span class='fx'>" + ic["bug"] + "</span>"
+            f"<div class='ft'><h3>TC-{idx:02d} · {esc(r.test_name)}</h3>"
+            f"<p class='fmeta'>{esc(fmeta)}</p></div>"
+            f"<div class='fbadges'>{header_badges}</div></summary>"
+            "<div class='fsec-body'><div class='fgrid'><div>" + left_col + "</div>" + right_col + "</div></div>"
+            "</details>"
+        )
+
+        # nav + toc
+        nav = (
+            f"<a class='nav-item' data-fid='{fid}' data-target='#{fid}'>"
+            f"<span class='st' style='background:{sev_color}'></span>"
+            f"<span class='nm'>{esc(r.test_name)}</span>"
+            f"<span class='cf' style='color:{conf_color}'>{conf}%</span>"
+            f"<span class='sub'>{esc(a.category.value)} · {esc(sev_label)}</span></a>"
+        )
+        toc = (
+            f"<a data-fid='{fid}' data-target='#{fid}'>"
+            f"<span class='st' style='background:{sev_color}'></span>{esc(r.test_name)}</a>"
+        )
+
+        payload = {
+            "nodeid": f.nodeid,
+            "test_name": r.test_name,
+            "category": a.category.value,
+            "severity": sev,
+            "confidence": conf,
+            "owner": a.owner,
+            "root_cause": a.root_cause,
+            "record": r.to_dict(),
+            "analysis": a.to_dict(),
+        }
+        return {
+            "nav": nav, "toc": toc, "section": section, "gallery": gallery,
+            "payload": {"slug": slug, "bug": bug_md, "markdown": self.report_gen.to_markdown(r, a), "json": payload},
+        }
+
+
+# Module-level singleton so that multiple pytest hook sites (the packaged
+# plugin and a project's own conftest) all feed and finalise the *same* report.
+_EXECUTION_BUILDER: "ExecutionReportBuilder | None" = None
+
+
+def get_execution_builder(cfg: AIConfig = ai_config) -> "ExecutionReportBuilder":
+    """Return the shared per-run consolidated-report builder (creating it once)."""
+    global _EXECUTION_BUILDER
+    if _EXECUTION_BUILDER is None:
+        _EXECUTION_BUILDER = ExecutionReportBuilder(cfg)
+    return _EXECUTION_BUILDER

@@ -113,6 +113,19 @@ from aiqa import render
 print(render(result, "markdown", context))   # or "json" | "html" | "console"
 ```
 
+Aggregate many runs into a historical **Quality Intelligence dashboard**
+(quality score, release readiness, trends, flaky detection, run comparison — no
+extra dependencies):
+
+```python
+from aiqa import QualityPortal
+
+portal = QualityPortal("reports")
+portal.begin_run(framework="playwright", environment="staging")
+portal.add_failure(result, context)
+portal.finish_run()   # -> reports/index.html (dashboard) + reports/run_*/ (per-run report)
+```
+
 ## Visual Overview
 
 <table>

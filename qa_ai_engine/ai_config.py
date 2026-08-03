@@ -130,12 +130,14 @@ class AIConfig:
     history_dir: Path = field(default_factory=lambda: _resolve_dir("AI_HISTORY_DIR", "failure_history"))
     reports_dir: Path = field(default_factory=lambda: _resolve_dir("AI_REPORTS_DIR", "ai_reports"))
     vector_dir: Path = field(default_factory=lambda: _resolve_dir("AI_VECTOR_DIR", "vector_db"))
+    # Destination for the single consolidated AI dashboard produced once per run.
+    dashboard_dir: Path = field(default_factory=lambda: _resolve_dir("AI_DASHBOARD_DIR", "reports"))
 
     framework_version: str = _env("FRAMEWORK_VERSION", "1.0.0")
 
     def ensure_dirs(self) -> None:
         """Create all output directories if they do not yet exist."""
-        for path in (self.prompts_dir, self.history_dir, self.reports_dir, self.vector_dir):
+        for path in (self.prompts_dir, self.history_dir, self.reports_dir, self.vector_dir, self.dashboard_dir):
             path.mkdir(parents=True, exist_ok=True)
 
     @property

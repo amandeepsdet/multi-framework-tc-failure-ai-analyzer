@@ -8,6 +8,7 @@ reports/screenshots so every run starts clean.
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 from typing import Iterator
@@ -50,6 +51,29 @@ def _get_ai_engine():
 
         _AI_ENGINE = AIEngine()
     return _AI_ENGINE
+
+
+# ---------------------------------------------- AIQA Quality Intelligence portal
+# The multi-run history/trend dashboard (reports/index.html) is generated from
+# the framework-agnostic AIQA SDK. It is opt-in via the same AI_ENABLED switch
+# (override with AIQA_PORTAL) and, unlike report.html, its history is NEVER wiped
+# so executions accumulate run-over-run.
+_AIQA_PORTAL = None  # lazily constructed singleton
+
+
+def _portal_enabled() -> bool:
+    flag = os.getenv("AIQA_PORTAL", os.getenv("AI_ENABLED", "false"))
+    return flag.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _get_portal():
+    """Return a cached QualityPortal writing into the project reports/ folder."""
+    global _AIQA_PORTAL
+    if _AIQA_PORTAL is None:
+        from aiqa.reporting import QualityPortal
+
+        _AIQA_PORTAL = QualityPortal(_PROJECT_ROOT / "reports")
+    return _AIQA_PORTAL
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -128,15 +152,50 @@ def _ai_event_recorder(request: pytest.FixtureRequest):
             request.node._ai_recorder = PageEventRecorder(page)  # type: ignore[attr-defined]
         except Exception as exc:  # noqa: BLE001  # pragma: no cover
             logger.debug("Could not attach AI recorder: %s", exc)
+    if _portal_enabled() and "page" in request.fixturenames:
+        try:
+            from aiqa.adapters.playwright import PlaywrightEventRecorder
+
+            page = request.getfixturevalue("page")
+            request.node._aiqa_recorder = PlaywrightEventRecorder(page)  # type: ignore[attr-defined]
+        except Exception as exc:  # noqa: BLE001  # pragma: no cover
+            logger.debug("Could not attach AIQA recorder: %s", exc)
     yield
 
 
 # ---------------------------------------------------- screenshot-on-failure hook
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    """Capture a screenshot when a UI test fails, then run AI analysis (opt-in)."""
+    """Capture a screenshot when a UI test fails, then run AI analysis (opt-in).
+
+    Pass/skip outcomes are also recorded so the consolidated AI report can show
+    accurate execution totals and a pass rate.
+    """
     outcome = yield
     report = outcome.get_result()
+
+    # Feed pass/skip totals into the single consolidated per-run AI report.
+    if _ai_enabled():
+        try:
+            engine = _get_ai_engine()
+            if report.when == "setup" and report.skipped:
+                engine.append_skipped(item.nodeid)
+            elif report.when == "call" and report.passed:
+                engine.append_success(item.nodeid)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Could not record test outcome for AI report: %s", exc)
+
+    # Feed the same pass/skip totals into the AIQA history portal.
+    if _portal_enabled():
+        try:
+            portal = _get_portal()
+            if report.when == "setup" and report.skipped:
+                portal.add_skipped(item.nodeid)
+            elif report.when == "call" and report.passed:
+                portal.add_success(item.nodeid)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Could not record test outcome for AIQA portal: %s", exc)
+
     if report.when != "call" or not report.failed:
         return
 
@@ -151,8 +210,108 @@ def pytest_runtest_makereport(item, call):
             logger.error("Could not capture failure screenshot: %s", exc)
             screenshot_file = None
 
-    if _ai_enabled():
+    if _ai_enabled() and not getattr(item, "_qa_ai_done", False):
+        item._qa_ai_done = True  # cooperate with the packaged plugin: analyse once
         _run_ai_analysis(item, call, report, page, screenshot_file)
+
+    if _portal_enabled() and not getattr(item, "_aiqa_done", False):
+        item._aiqa_done = True
+        _aiqa_record_failure(item, call, report, page, screenshot_file)
+
+
+# ---------------------------------------------------- consolidated AI report hooks
+def pytest_sessionstart(session) -> None:
+    """Open a fresh consolidated AI report + AIQA portal run (opt-in)."""
+    if _ai_enabled():
+        try:
+            _get_ai_engine().begin_execution()
+        except Exception as exc:  # noqa: BLE001  # pragma: no cover
+            logger.debug("Could not start AI execution report: %s", exc)
+    if _portal_enabled():
+        try:
+            import platform
+
+            from aiqa import __version__ as _aiqa_version
+
+            _get_portal().begin_run(
+                framework="playwright",
+                environment=os.getenv("AIQA_ENV", ""),
+                python_version=platform.python_version(),
+                package_version=_aiqa_version,
+            )
+        except Exception as exc:  # noqa: BLE001  # pragma: no cover
+            logger.debug("Could not start AIQA portal run: %s", exc)
+
+
+def pytest_sessionfinish(session, exitstatus) -> None:
+    """Render ONE consolidated AI dashboard + refresh the AIQA portal (opt-in)."""
+    if _ai_enabled():
+        try:
+            engine = _get_ai_engine()
+            if engine.report_builder.has_data:
+                paths = engine.finish_execution()
+                html_path = paths.get("html")
+                if html_path is not None:
+                    logger.info("AI failure-analysis dashboard generated: %s", html_path)
+        except Exception as exc:  # noqa: BLE001  # pragma: no cover
+            logger.debug("Could not finalise AI execution report: %s", exc)
+
+    if _portal_enabled():
+        try:
+            portal = _get_portal()
+            if portal.has_data:
+                run = portal.finish_run()
+                logger.info(
+                    "AIQA Quality Intelligence portal updated: %s (run %s)",
+                    _PROJECT_ROOT / "reports" / "index.html",
+                    run.run_id if run else "n/a",
+                )
+        except Exception as exc:  # noqa: BLE001  # pragma: no cover
+            logger.debug("Could not finalise AIQA portal: %s", exc)
+
+
+def _aiqa_record_failure(item, call, report, page, screenshot_file) -> None:
+    """Build an AIQA FailureContext, analyse it, and add it to the portal run.
+
+    Reuses the AIQA adapters and analyzer unchanged; never raises into the run.
+    """
+    try:
+        from aiqa import FailureAnalyzer
+        from aiqa.adapters.playwright import PlaywrightAdapter
+        from aiqa.adapters.pytest_adapter import PytestAdapter
+
+        exc = call.excinfo.value if call.excinfo else None
+        assertion = report.longreprtext[:1000] if hasattr(report, "longreprtext") else ""
+        browser = item.funcargs.get("browser_name", "") if hasattr(item, "funcargs") else ""
+        exec_time = getattr(call, "stop", 0) - getattr(call, "start", 0)
+        environment = os.getenv("AIQA_ENV", "")
+
+        if page is not None:
+            adapter = PlaywrightAdapter(page=page, recorder=getattr(item, "_aiqa_recorder", None))
+            context = adapter.collect_failure_context(
+                exception=exc,
+                test_name=item.nodeid,
+                assertion_message=assertion,
+                screenshot=screenshot_file,
+                browser=browser,
+                environment=environment,
+                execution_time_s=round(exec_time, 3) if exec_time else None,
+            )
+        else:
+            context = PytestAdapter().collect_failure_context(
+                exception=exc,
+                test_name=item.nodeid,
+                item=item,
+                call=call,
+                report=report,
+                assertion_message=assertion,
+                environment=environment,
+            )
+
+        result = FailureAnalyzer().analyze(context)
+        _get_portal().add_failure(result, context)
+    except Exception as exc:  # noqa: BLE001 - the portal must never break the run
+        logger.warning("AIQA portal failure recording skipped: %s", exc)
 
 
 def _run_ai_analysis(item, call, report, page, screenshot_file) -> None:
@@ -182,6 +341,7 @@ def _run_ai_analysis(item, call, report, page, screenshot_file) -> None:
             analysis.confidence,
             analysis.owner,
         )
+        engine.append_failure(outcome, nodeid=item.nodeid)
         _attach_ai_to_allure(engine, outcome)
         _attach_ai_to_html(item, report, engine, outcome)
     except Exception as exc:  # noqa: BLE001 - AI must never break the run

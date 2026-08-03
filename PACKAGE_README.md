@@ -40,7 +40,7 @@ everything depends on the core.
    AI Analysis Engine       analyze(context) -> AnalysisResult   (never imports a framework)
       │  produces
       ▼
-   Reporting                (Markdown · JSON · HTML · Console · your own)
+   Reporting                (Markdown · JSON · HTML · Console · multi-run portal · your own)
       │
       ▼
    Output
@@ -175,6 +175,41 @@ from aiqa.reporting import BugReportBuilder
 bug = BugReportBuilder().build(result, context)
 print(BugReportBuilder.to_markdown(bug))
 ```
+
+## Quality Intelligence Platform (multi-run portal)
+
+The reporters above render a *single* result. For a **historical, multi-run**
+view, `QualityPortal` aggregates every execution into an execution history, a
+knowledge base, trends, and a self-contained HTML dashboard — without touching
+the core models, adapters, or analysis engine, and with **zero extra
+dependencies** (pure standard library).
+
+```python
+from aiqa import FailureAnalyzer, QualityPortal
+
+portal = QualityPortal("reports")
+portal.begin_run(framework="playwright", environment="staging")
+
+# per analysed failure during the run:
+portal.add_failure(result, context)
+portal.add_success("suite::test_ok")   # optional, for an accurate pass rate
+
+run = portal.finish_run()
+# -> reports/run_*/ai_report.html  (this execution)
+# -> reports/index.html            (dashboard across all executions)
+```
+
+Each run gets its own `run_*/` folder with one HTML report; `index.html` is
+regenerated to discover every run. On top of the raw results the portal derives:
+
+| Capability | What it gives you |
+|------------|-------------------|
+| **Quality Score & build health** | Weighted 0–100 score (Excellent / Good / Warning / Poor) + Healthy / Warning / Critical signal. |
+| **Release readiness** | READY / AT_RISK / NOT_READY verdict with reasons. |
+| **Run comparison** | New / resolved / persisting failures and regressions, keyed by a stable failure signature. |
+| **Flaky detection** | Pass/fail transition analysis over a sliding window. |
+| **Knowledge base** | Recurring-failure recall, occurrence counts, most successful historical fix. |
+| **Trends & insights** | Pass rate, failures, confidence, duration, and quality across runs, plus an AI executive summary. |
 
 ---
 

@@ -115,6 +115,10 @@ Do not read env vars or hardcode URLs/credentials anywhere else.
 - Fixtures: `api_client` (session-scoped, authenticated), `login_page` (opened),
   `authenticated_page` (logs in + screenshots), `dashboard_page`.
 - `pytest_runtest_makereport` hook captures a screenshot on any UI failure.
+- **Optional AI portal:** when `AI_ENABLED`/`AIQA_PORTAL` is set, the same hooks
+  feed each failure into `aiqa`'s `QualityPortal`, producing a multi-run
+  dashboard at `reports/index.html` (per-run reports under `reports/run_*/`).
+  Disabled by default, so normal runs are unaffected.
 
 ### `utils/helpers.py` — shared assertions/util
 - `extract_number(text)` (first number from strings like "12 °C"),

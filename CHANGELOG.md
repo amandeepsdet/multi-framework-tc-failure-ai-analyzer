@@ -4,6 +4,50 @@ All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and the
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [3.1.0] — 2026-08-03
+
+Minor release. Adds a new **multi-run reporting layer** on top of the existing
+single-result reporters. Fully backward compatible — the core domain models, the
+adapters, and the AI analysis engine are unchanged, and no new runtime
+dependencies are introduced (the portal is pure standard library).
+
+### Added
+- **Quality Intelligence Platform** (`aiqa.reporting.portal`) — a historical,
+  multi-execution reporting portal exposed through a single facade,
+  `QualityPortal`, also re-exported at the top level (`from aiqa import QualityPortal`):
+  - **Execution history** — every run is persisted to its own `run_*/` folder
+    with a self-contained HTML report, plus a regenerated landing `index.html`
+    dashboard that discovers all runs (`history.json` / `latest.json`).
+  - **Quality Score & build health** — a weighted 0–100 score with
+    Excellent / Good / Warning / Poor bands and a Healthy / Warning / Critical
+    build-health signal.
+  - **Release readiness** — a READY / AT_RISK / NOT_READY verdict with reasons.
+  - **Run-over-run comparison** — new / resolved / persisting failures and
+    regression detection, keyed by a stable failure signature.
+  - **Flaky-test detection** — heuristic pass/fail transition analysis over a
+    sliding window.
+  - **Knowledge base / failure memory** — recurring-failure recall, occurrence
+    counts, and the most successful historical fix.
+  - **Trend analysis** — pass rate, failure count, confidence, duration, and
+    quality score across recent runs.
+  - **AI executive summary & insights** — prose run summaries plus cross-run
+    insights (category shifts, first-seen HTTP statuses, owner hotspots).
+  - **Failure clustering** — groups failures into Authentication / Security /
+    Backend / UI / Timeout / Network / Infrastructure themes.
+- **Automatic portal generation** in the reference pytest suite — the demo
+  `conftest.py` wires `QualityPortal` into the pytest lifecycle so a portal is
+  produced on every run (gated by `AI_ENABLED` / `AIQA_PORTAL`).
+- **`examples/generate_portal.py`** — a standalone script that generates a
+  multi-run portal from synthetic scenarios.
+
+### Unchanged (backward compatible)
+- Import name `aiqa` and the entire existing public API.
+- `FailureContext`, `AnalysisResult`, all adapters, and the analysis engine.
+- The single-result reporters (`markdown`, `json`, `html`, `console`) and
+  `BugReportBuilder`.
+
+---
+
 ## [3.0.0] — 2026-08-01
 
 Major release. **The package identity changed**, so this is a major version bump
@@ -53,6 +97,7 @@ even though the public Python API (`import aiqa`) is unchanged.
 - Initial release as `playwright-tc-failure-ai-analyzer` — pytest + Playwright AI
   failure analysis engine.
 
+[3.1.0]: https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/releases/tag/v3.1.0
 [3.0.0]: https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/releases/tag/v3.0.0
 [2.0.1]: https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/releases/tag/v2.0.1
 [2.0.0]: https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/releases/tag/v2.0.0

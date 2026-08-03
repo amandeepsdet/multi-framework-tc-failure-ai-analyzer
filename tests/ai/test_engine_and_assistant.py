@@ -21,6 +21,7 @@ def tmp_config(tmp_path) -> AIConfig:
         history_dir=tmp_path / "failure_history",
         reports_dir=tmp_path / "ai_reports",
         vector_dir=tmp_path / "vector_db",
+        dashboard_dir=tmp_path / "reports",
     )
     cfg.ensure_dirs()
     return cfg
@@ -74,7 +75,16 @@ def test_engine_analyze_record_offline(tmp_config: AIConfig) -> None:
     assert outcome.analysis.category.value == "Backend"
     assert outcome.bug_report.title
     assert outcome.history_path is not None
-    assert "md" in outcome.report_paths
+    # Per-test HTML reports are no longer generated; one consolidated dashboard is
+    # produced per execution instead.
+    engine.begin_execution(run_name="unit-run")
+    engine.append_failure(outcome, nodeid=record.test_name)
+    engine.append_success("test_that_passed")
+    paths = engine.finish_execution()
+    assert "html" in paths and paths["html"].exists()
+    assert paths["html"].name == "ai_failure_analysis.html"
+    assert (tmp_config.dashboard_dir / "ai_failure_analysis.json").exists()
+    assert (tmp_config.dashboard_dir / "ai_failure_analysis.md").exists()
 
 
 @pytest.mark.ai
