@@ -35,9 +35,7 @@ ABB_Assignment/
 │   └── dashboard_page.py  # DashboardPage: dashboards nav + Tanks-table reads
 ├── tests/
 │   ├── conftest.py        # fixtures + report/screenshot cleanup + failure hook
-│   ├── test_login.py      # TC-01..03, TC-16 (UI login, incl. negative)
-│   ├── test_dashboard_ui.py  # TC-04..07 (dashboard widgets/columns/realtime)
-│   └── test_api_telemetry.py # TC-08..15 (auth, devices, telemetry, negative)
+│   └── test_login.py      # TC-01..03, TC-16 (UI login, incl. negative)
 ├── utils/
 │   ├── config.py          # Config dataclass + module-level `config` singleton
 │   ├── api_client.py      # ThingsBoardAPIClient + ThingsBoardAPIError
@@ -134,12 +132,6 @@ Do not read env vars or hardcode URLs/credentials anywhere else.
 | ID | File | Test |
 |----|------|------|
 | TC-01..03 | test_login.py | form elements / valid / invalid login |
-| TC-04 | test_dashboard_ui.py | dashboard loads / not blank |
-| TC-05 | test_dashboard_ui.py | Tanks table columns (parametrized) |
-| TC-06 | test_dashboard_ui.py | metric values within range |
-| TC-07 | test_dashboard_ui.py | real-time telemetry refresh |
-| TC-08..12 | test_api_telemetry.py | auth token, unauthorized, devices, telemetry structure, telemetry ranges |
-| TC-13..15 | test_api_telemetry.py | wrong password, tampered JWT, missing device |
 | TC-16 | test_login.py | empty credentials blocked |
 
 If you add/renumber a test, update **all three** in sync: the doc, the
@@ -176,7 +168,7 @@ If you add/renumber a test, update **all three** in sync: the doc, the
 
 **Add a new API test**
 1. Add a reusable method to `ThingsBoardAPIClient` if a new endpoint is needed.
-2. Add the test to `tests/test_api_telemetry.py` (assert types/ranges via
+2. Add the test to a `tests/test_*.py` module (assert types/ranges via
    `helpers`, or `pytest.raises(ThingsBoardAPIError)` for negatives).
 3. Update the doc + allure title; regenerate xlsx.
 
@@ -272,7 +264,7 @@ venv path. Chain commands with `;` (no `&&`).
 & ".venv/Scripts/python.exe" -m pytest
 
 # One test, watch it, slow motion
-& ".venv/Scripts/python.exe" -m pytest tests/test_dashboard_ui.py::test_metric_values_within_range --headed --slowmo 300 -v
+& ".venv/Scripts/python.exe" -m pytest tests/test_login.py::test_valid_login_succeeds --headed --slowmo 300 -v
 
 # By marker
 & ".venv/Scripts/python.exe" -m pytest -m api

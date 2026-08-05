@@ -149,7 +149,7 @@ in plain English.
 
 ```powershell
 python qa_ai.py analyze-last-failure
-python qa_ai.py explain tests/test_dashboard_ui.py::test_realtime_telemetry_refresh
+python qa_ai.py explain tests/test_ai_demo.py::test_demo_wrong_locator
 python qa_ai.py search "temperature widget failures"
 python qa_ai.py find-flaky-tests
 python qa_ai.py release-readiness

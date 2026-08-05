@@ -360,9 +360,7 @@ ABB_Assignment/
 │   └── dashboard_page.py     # Dashboard POM (Tanks table)
 ├── tests/
 │   ├── conftest.py           # Fixtures + failure screenshot hook + fresh-run cleanup
-│   ├── test_login.py         # Login UI tests (incl. negative)
-│   ├── test_dashboard_ui.py  # Dashboard + real-time telemetry tests
-│   └── test_api_telemetry.py # API auth / device / telemetry tests
+│   └── test_login.py         # Login UI tests (incl. negative)
 ├── utils/
 │   ├── config.py             # Central config (env-overridable)
 │   ├── logger.py             # Console + file logging
@@ -406,8 +404,8 @@ Supporting: `pytest-playwright` (Playwright↔pytest integration), `python-doten
 
 | Metric | Value |
 |--------|-------|
-| Test suites | 3 (`test_login`, `test_dashboard_ui`, `test_api_telemetry`) |
-| Automated test cases | 16 (TC-01 … TC-16) |
+| Test suites | 1 (`test_login`) |
+| Automated test cases | login UI (incl. negative) |
 | Page objects | 3 (`BasePage`, `LoginPage`, `DashboardPage`) |
 | Utility modules | 4 (`config`, `api_client`, `helpers`, `logger`) |
 | Supported browsers | 3 (Chromium, Firefox, WebKit) |
@@ -487,7 +485,6 @@ pytest -m negative
 
 # Run a single file or test
 pytest tests/test_login.py
-pytest tests/test_api_telemetry.py -k authentication
 
 # Cross-browser
 pytest --browser firefox
@@ -644,7 +641,7 @@ a conversational REPL. Business logic lives in the reusable `assistant` package
 
 ```powershell
 python qa_ai.py analyze-last-failure
-python qa_ai.py explain tests/test_dashboard_ui.py::test_realtime_telemetry_refresh
+python qa_ai.py explain tests/test_ai_demo.py::test_demo_wrong_locator
 python qa_ai.py summarize-run
 python qa_ai.py generate-bug
 python qa_ai.py search "temperature widget failures"

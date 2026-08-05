@@ -4,7 +4,7 @@
 Examples::
 
     python qa_ai.py analyze-last-failure
-    python qa_ai.py explain tests/test_dashboard_ui.py::test_realtime
+    python qa_ai.py explain tests/test_ai_demo.py::test_demo_wrong_locator
     python qa_ai.py summarize-run
     python qa_ai.py generate-bug
     python qa_ai.py search "temperature widget failures"
