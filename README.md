@@ -708,7 +708,7 @@ Copy-Item .env.example .env   # then edit .env with your real values
 
 ---
 
-## 14. Assignment Note
+## 14. Assignment Notes
 
 The original assignment supplied ThingsBoard **demo credentials that were
 inactive**. To preserve every assignment objective, the framework was completed
