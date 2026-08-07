@@ -1,0 +1,35 @@
+{
+  "analysis": {
+    "root_cause": {
+      "summary": "A backend service returned HTTP 500; the client could not obtain valid data.",
+      "category": "Backend",
+      "detail": "Inspect server logs for the failing endpoint; the defect is server-side, not in the test."
+    },
+    "confidence": {
+      "value": 92,
+      "rationale": "Rule-based classification from 4 evidence signal(s)."
+    },
+    "severity": "Critical",
+    "owner": "Backend / Platform team",
+    "evidence": [
+      "Assertion: expected 200 but server returned HTTP 500",
+      "Exception: AssertionError",
+      "Network status codes observed: 500",
+      "Console errors: 1 (e.g. Payment request failed)"
+    ],
+    "recommendations": [
+      {
+        "action": "Inspect server logs for the failing endpoint; the defect is server-side, not in the test.",
+        "rationale": ""
+      }
+    ],
+    "similar_failures": [],
+    "reasoning": "Deterministic heuristic analysis. Configure an LLM provider for deeper natural-language reasoning.",
+    "source": "heuristic"
+  },
+  "context": {
+    "test_name": "checkout::test_pay",
+    "framework": "pytest",
+    "environment": "staging"
+  }
+}

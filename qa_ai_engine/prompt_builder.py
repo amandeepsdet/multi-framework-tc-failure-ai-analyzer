@@ -77,7 +77,7 @@ _DEFAULT_TEMPLATES: dict[str, str] = {
     ),
     "visual_analysis": (
         "Inspect the attached screenshot of a web dashboard under test and "
-        "answer strictly from what is visible: Is a widget missing? Is a loading "
+        "answer strictly from what is visible: Is a UI element missing? Is a loading "
         "spinner visible? Is the dashboard blank? Is the layout broken? Is an "
         "authentication/login page shown? Respond with ONLY JSON: "
         "{\"widget_missing\":bool,\"spinner_visible\":bool,\"dashboard_blank\":bool,"

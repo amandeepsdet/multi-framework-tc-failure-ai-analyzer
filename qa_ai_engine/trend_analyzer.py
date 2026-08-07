@@ -27,7 +27,7 @@ class TrendReport:
     category_distribution: dict[str, int] = field(default_factory=dict)
     flaky_tests: list[dict[str, Any]] = field(default_factory=list)
     most_failing_apis: list[dict[str, Any]] = field(default_factory=list)
-    most_failing_widgets: list[dict[str, Any]] = field(default_factory=list)
+    most_failing_components: list[dict[str, Any]] = field(default_factory=list)
     average_runtime_s: float | None = None
     failure_trend: dict[str, int] = field(default_factory=dict)
 
@@ -62,11 +62,9 @@ class TrendAnalyzer:
         categories: Counter[str] = Counter()
         tests: Counter[str] = Counter()
         apis: Counter[str] = Counter()
-        widgets: Counter[str] = Counter()
+        components: Counter[str] = Counter()
         runtimes: list[float] = []
         by_day: Counter[str] = Counter()
-
-        widget_keywords = ("fuel", "temperature", "battery", "connection", "tank", "widget")
 
         for item in items:
             record = item.get("record", {})
@@ -87,15 +85,14 @@ class TrendAnalyzer:
                 status = net.get("status")
                 if isinstance(status, int) and status >= 400:
                     apis[_short_url(net.get("url", ""))] += 1
-            blob = (test_name + " " + record.get("failure", "")).lower()
-            for kw in widget_keywords:
-                if kw in blob:
-                    widgets[kw] += 1
+            component = _component_of(test_name)
+            if component:
+                components[component] += 1
 
         report.category_distribution = dict(categories.most_common())
         report.most_common_failures = [{"test": t, "count": c} for t, c in tests.most_common(10)]
         report.most_failing_apis = [{"endpoint": a, "count": c} for a, c in apis.most_common(10)]
-        report.most_failing_widgets = [{"widget": w, "count": c} for w, c in widgets.most_common(10)]
+        report.most_failing_components = [{"component": w, "count": c} for w, c in components.most_common(10)]
         report.average_runtime_s = round(sum(runtimes) / len(runtimes), 2) if runtimes else None
         report.failure_trend = dict(sorted(by_day.items()))
         report.flaky_tests = self._detect_flaky(items)
@@ -163,3 +160,15 @@ def _short_url(url: str) -> str:
     without_scheme = url.split("://", 1)[-1]
     path = "/" + without_scheme.split("/", 1)[1] if "/" in without_scheme else without_scheme
     return path.split("?", 1)[0]
+
+
+def _component_of(test_name: str) -> str:
+    """Derive a component/module name from a test id (prefix before ``::``)."""
+    if not test_name:
+        return ""
+    head = test_name.split("::", 1)[0]
+    head = head.replace("\\", "/").rsplit("/", 1)[-1]
+    for suffix in (".py", ".robot", ".js", ".ts"):
+        if head.endswith(suffix):
+            head = head[: -len(suffix)]
+    return head.replace("test_", "").replace("_test", "") or head

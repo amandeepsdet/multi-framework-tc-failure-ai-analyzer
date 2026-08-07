@@ -859,7 +859,7 @@ class ReportGenerator:
             f"## Failure Categories\n{categories}\n\n"
             f"## Most Common Failures\n{_rows(trend.most_common_failures, 'test')}\n\n"
             f"## Most Failing APIs\n{_rows(trend.most_failing_apis, 'endpoint')}\n\n"
-            f"## Most Failing Widgets\n{_rows(trend.most_failing_widgets, 'widget')}\n\n"
+            f"## Most Failing Components\n{_rows(trend.most_failing_components, 'component')}\n\n"
             f"## Flaky Tests\n{flaky}\n\n"
             f"## Failure Trend (by day)\n"
             + ("\n".join(f"- {day}: {n}" for day, n in trend.failure_trend.items()) or "- (none)")

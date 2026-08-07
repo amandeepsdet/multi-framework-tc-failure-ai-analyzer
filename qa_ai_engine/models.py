@@ -54,7 +54,7 @@ class FailureCategory(str, Enum):
             cls.PERFORMANCE: ("slow", "performance", "latency"),
             cls.FLAKY: ("flaky", "intermittent", "race"),
             cls.API: ("api", "endpoint", "rest"),
-            cls.UI: ("ui", "render", "widget", "dashboard"),
+            cls.UI: ("ui", "render", "element", "component", "layout"),
         }
         for member, hints in keywords.items():
             if any(hint in needle for hint in hints):

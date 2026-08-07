@@ -2,7 +2,7 @@
 
 When ``AI_VISION_ENABLED`` is on and the configured provider supports vision,
 the collected screenshot is inspected to answer concrete, evidence-based
-questions (missing widget, spinner, blank dashboard, broken layout, auth page).
+questions (missing element, spinner, blank screen, broken layout, auth page).
 When vision is unavailable the analyzer returns a clearly-marked "skipped"
 result so callers can degrade gracefully.
 """

@@ -7,6 +7,11 @@ try/except around your steps). The SDK never touches Playwright itself — the
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from aiqa import FailureAnalyzer, render
 from aiqa.adapters import PlaywrightAdapter, PlaywrightEventRecorder
 

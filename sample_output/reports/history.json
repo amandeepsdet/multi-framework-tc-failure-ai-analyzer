@@ -1,0 +1,54 @@
+{
+  "runs": [
+    {
+      "run_id": "run_20260807_205023",
+      "run_name": "run_20260807_205023",
+      "started": "2026-08-07T15:20:23.627176+00:00",
+      "finished": "2026-08-07T15:20:23.627489+00:00",
+      "duration_s": 0.0,
+      "framework": "pytest",
+      "environment": "staging",
+      "browser": "",
+      "os": "",
+      "python_version": "",
+      "package_version": "",
+      "commit": "",
+      "total": 2,
+      "passed": 1,
+      "failed": 1,
+      "skipped": 0,
+      "pass_rate": 50.0,
+      "avg_confidence": 92.0,
+      "quality_score": 42,
+      "quality_band": "Poor",
+      "build_health": "Critical",
+      "release_readiness": "NOT READY",
+      "regressions": 0,
+      "flaky_count": 0,
+      "critical": 1,
+      "security": 0,
+      "categories": {
+        "Backend": 1
+      },
+      "owners": {
+        "Backend / Platform team": 1
+      },
+      "severities": {
+        "Critical": 1
+      },
+      "report_rel": "run_20260807_205023/ai_report.html",
+      "failures": [
+        {
+          "test_id": "checkout::test_pay",
+          "test_name": "checkout::test_pay",
+          "category": "Backend",
+          "severity": "Critical",
+          "confidence": 92,
+          "owner": "Backend / Platform team",
+          "signature": "31554193f46e",
+          "root_cause": "A backend service returned HTTP 500; the client could not obtain valid data."
+        }
+      ]
+    }
+  ]
+}

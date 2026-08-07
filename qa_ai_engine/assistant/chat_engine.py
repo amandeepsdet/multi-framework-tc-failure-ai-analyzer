@@ -55,30 +55,23 @@ class ChatEngine:
             Intent("flaky", [r"\bflaky\b", r"intermittent"], lambda e, t: a.find_flaky_tests()),
             Intent("release", [r"release read", r"ready to release", r"release score", r"ship it"],
                    lambda e, t: a.release_readiness()),
-            Intent("trend", [r"fail most", r"most often", r"trend", r"take longest", r"which widgets",
+            Intent("compare", [r"compare runs?", r"since last run", r"new failures", r"\bregressions?\b"],
+                   lambda e, t: a.compare_runs()),
+            Intent("quality", [r"quality (summary|score|overview)", r"build health", r"how healthy"],
+                   lambda e, t: a.quality_summary()),
+            Intent("trend", [r"fail most", r"most often", r"trend", r"take longest", r"which components",
                              r"which apis", r"sprint quality", r"executive summary"],
                    lambda e, t: a.trend_analysis()),
             Intent("bug", [r"\bbug\b", r"jira", r"azure devops", r"github issue", r"work item"],
                    lambda e, t: a.generate_bug(_extract_quoted(t) or None)),
-            Intent("locator", [r"locator", r"selector", r"getby"],
-                   lambda e, t: a.suggest_locator(_extract_quoted(t, "the element"))),
-            Intent("gen_test", [r"generate .*test", r"regression suite", r"smoke suite",
-                                r"boundary test", r"negative test", r"write a test"],
-                   lambda e, t: a.generate_test(_extract_quoted(t, t))),
             Intent("stacktrace", [r"stacktrace", r"traceback", r"stack trace"],
                    lambda e, t: a.explain_stacktrace(t)),
             Intent("api_resp", [r"api response", r"explain this api"],
                    lambda e, t: a.explain_api_response(t)),
-            Intent("explain_widget", [r"widget", r"fuel", r"battery", r"temperature", r"connection"],
-                   lambda e, t: a.explain_widget(_extract_quoted(t) or _first_keyword(t))),
-            Intent("explain_api", [r"\bapi\b", r"endpoint", r"telemetry", r"authentication"],
-                   lambda e, t: a.explain_api(_first_keyword(t))),
-            Intent("dashboard", [r"dashboard architecture", r"framework architecture", r"dashboard summary"],
-                   lambda e, t: a.dashboard_summary()),
             Intent("search", [r"^search\b", r"similar failures", r"show .*failures", r"historical failures",
                               r"failures from"],
                    lambda e, t: a.search(_extract_quoted(t, t))),
-            Intent("explain_test", [r"why did", r"why is", r"explain .*test", r"\bTC-?\d+\b"],
+            Intent("explain_test", [r"why did", r"why is", r"explain .*failure", r"explain .*test", r"\bTC-?\d+\b"],
                    lambda e, t: a.explain_test(_extract_quoted(t, t))),
             Intent("summarize", [r"summariz", r"summary of", r"summarize run"],
                    lambda e, t: a.summarize_run()),
@@ -136,14 +129,6 @@ class ChatEngine:
             ex = tool.examples()
             if ex:
                 print(f"  - {ex[0]}")
-
-
-def _first_keyword(text: str) -> str:
-    for kw in ("fuel", "battery", "temperature", "connection", "telemetry",
-               "authentication", "devices", "login", "auth"):
-        if kw in text.lower():
-            return kw
-    return text
 
 
 def format_result(result: Any) -> str:

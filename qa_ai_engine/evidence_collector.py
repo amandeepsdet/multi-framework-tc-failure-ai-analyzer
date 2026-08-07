@@ -143,7 +143,7 @@ class EvidenceCollector:
     def _environment() -> str:
         import os
 
-        return os.getenv("TEST_ENV", os.getenv("TB_BASE_URL", "default"))
+        return os.getenv("TEST_ENV", os.getenv("AIQA_ENV", "default"))
 
     @staticmethod
     def _git_commit() -> str:

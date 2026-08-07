@@ -22,8 +22,8 @@ def _record(**evidence) -> FailureRecord:
 @pytest.mark.ai
 def test_backend_5xx_is_classified_as_backend(analyzer: FailureAnalyzer) -> None:
     record = _record(
-        assertion_message="widget empty",
-        network=[{"method": "GET", "url": "/api/telemetry", "status": 500}],
+        assertion_message="element not visible",
+        network=[{"method": "GET", "url": "/api/metrics", "status": 500}],
     )
     result = analyzer._analyze_heuristically(record)
     assert result.category is FailureCategory.BACKEND
@@ -33,7 +33,7 @@ def test_backend_5xx_is_classified_as_backend(analyzer: FailureAnalyzer) -> None
 
 @pytest.mark.ai
 def test_401_is_authentication(analyzer: FailureAnalyzer) -> None:
-    record = _record(network=[{"method": "GET", "url": "/api/tenant/devices", "status": 401}])
+    record = _record(network=[{"method": "GET", "url": "/api/account/profile", "status": 401}])
     result = analyzer._analyze_heuristically(record)
     assert result.category is FailureCategory.AUTHENTICATION
 
@@ -89,8 +89,8 @@ def test_scrub_disabled_is_noop() -> None:
 @pytest.mark.ai
 def test_hash_embedder_similarity() -> None:
     embedder = HashEmbedder(dim=128)
-    a = embedder.embed("dashboard widget did not render HTTP 500")
-    b = embedder.embed("widget empty because backend returned HTTP 500")
+    a = embedder.embed("page element did not render HTTP 500")
+    b = embedder.embed("element empty because backend returned HTTP 500")
     c = embedder.embed("login form username password field visible")
     assert cosine_similarity(a, b) > cosine_similarity(a, c)
 

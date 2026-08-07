@@ -13,6 +13,11 @@ reports/
 screenshots/
 test-results/
 
+# Committed sample output (a showcase of what the SDK produces) — keep it
+# despite the generic reports/ rule above.
+!sample_output/
+!sample_output/**
+
 # AI engine runtime output (keep the folders via .gitkeep, ignore contents)
 failure_history/*
 !failure_history/.gitkeep
@@ -22,7 +27,7 @@ vector_db/*
 !vector_db/.gitkeep
 
 # Local zip artifacts
-ABB_Assignment_*.zip
+*.zip
 make_zip*.ps1
 
 # Python packaging / build artifacts

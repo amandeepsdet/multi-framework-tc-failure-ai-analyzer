@@ -1,0 +1,25 @@
+{
+  "categories": {
+    "Backend": 1
+  },
+  "severities": {
+    "Critical": 1
+  },
+  "owners": {
+    "Backend / Platform team": 1
+  },
+  "clusters": [
+    {
+      "name": "Backend",
+      "count": 1,
+      "critical": 1,
+      "avg_confidence": 92.0,
+      "owners": {
+        "Backend / Platform team": 1
+      },
+      "test_names": [
+        "checkout::test_pay"
+      ]
+    }
+  ]
+}

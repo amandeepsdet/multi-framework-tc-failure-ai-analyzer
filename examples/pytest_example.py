@@ -6,6 +6,11 @@ or unit — using the framework-agnostic ``PytestAdapter``. No browser required.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import pytest
 
 from aiqa import FailureAnalyzer

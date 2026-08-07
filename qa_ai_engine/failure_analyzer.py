@@ -255,15 +255,15 @@ class FailureAnalyzer:
                 FailureCategory.UI,
                 70,
                 "The page rendered empty or without the expected widgets.",
-                "Confirm the dashboard loaded and data-bound widgets received telemetry; inspect console errors.",
+                "Confirm the page loaded and data-bound elements received their data; inspect console errors.",
             )
         # 6. Range / data assertions.
         if any(k in text for k in ("out of range", "outside", "not numeric", "invalid connection")):
             return (
                 FailureCategory.DATA,
                 68,
-                "A telemetry value fell outside its expected range or type.",
-                "Validate the device's emitted data and the configured range bounds.",
+                "A data value fell outside its expected range or type.",
+                "Validate the source data and the configured range bounds.",
             )
         # 7. Console errors present.
         if any(c.get("type") == "error" for c in ev.console_logs):

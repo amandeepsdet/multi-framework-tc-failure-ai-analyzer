@@ -2,7 +2,7 @@
 
 Provides a single ``get_logger`` factory that writes to both the console and a
 timestamped file under ``logs/``. Using one factory keeps log formatting
-consistent across page objects, the API client, and tests.
+consistent across the SDK demo, the AI engine, and tests.
 """
 
 from __future__ import annotations

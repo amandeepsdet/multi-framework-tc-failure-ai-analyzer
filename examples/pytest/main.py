@@ -7,6 +7,11 @@ Run the standalone demo:
     python examples/pytest/main.py
 """
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
 from aiqa import FailureAnalyzer, render
 from aiqa.adapters import PytestAdapter
 

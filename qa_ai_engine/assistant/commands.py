@@ -17,14 +17,14 @@ from .chat_engine import ChatEngine, format_result
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="qa_ai",
-        description="AI-powered QA assistant for pytest + Playwright automation projects.",
+        description="AI-powered QA assistant for framework-agnostic failure analysis.",
     )
     sub = parser.add_subparsers(dest="command")
 
     sub.add_parser("status", help="Show AI provider/config status.")
     sub.add_parser("analyze-last-failure", help="Analyze the most recent failure.")
 
-    p_explain = sub.add_parser("explain", help="Explain why a test failed.")
+    p_explain = sub.add_parser("explain-failure", help="Explain why a test failed.")
     p_explain.add_argument("test_id", help="Test id or node id (e.g. tests/test_x.py::test_y).")
 
     sub.add_parser("summarize-run", help="Summarize the latest run.")
@@ -32,26 +32,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_bug = sub.add_parser("generate-bug", help="Generate a bug report.")
     p_bug.add_argument("test_id", nargs="?", default=None, help="Optional test id.")
 
-    p_search = sub.add_parser("search", help="Semantic search over failure history.")
+    p_search = sub.add_parser("search-history", help="Semantic search over failure history.")
     p_search.add_argument("query", help="Search query, e.g. 'login timeout failures'.")
 
+    sub.add_parser("compare-runs", help="Compare recent failures against older history.")
+    sub.add_parser("quality-summary", help="Compact quality overview (trend + readiness).")
     sub.add_parser("find-flaky-tests", help="List flaky tests.")
     sub.add_parser("release-readiness", help="Compute release-readiness score.")
     sub.add_parser("trend", help="Show quality trend analysis.")
-
-    p_widget = sub.add_parser("explain-widget", help="Explain a UI component/widget.")
-    p_widget.add_argument("widget", help="Component/widget name (needs a knowledge file).")
-
-    p_api = sub.add_parser("explain-api", help="Explain an API.")
-    p_api.add_argument("api", help="API name, e.g. login (needs a knowledge file).")
-
-    p_loc = sub.add_parser("suggest-locator", help="Suggest a Playwright locator.")
-    p_loc.add_argument("description", help="Element description, e.g. 'login button'.")
-
-    p_gen = sub.add_parser("generate-test", help="Draft a test for a scenario.")
-    p_gen.add_argument("description", help="Scenario, e.g. 'valid login'.")
-
-    sub.add_parser("dashboard-summary", help="Summarize the application under test.")
 
     p_report = sub.add_parser("analyze-report", help="Analyze an HTML report.")
     p_report.add_argument("report", help="Path to reports/report.html.")
@@ -71,18 +59,15 @@ def dispatch(args: argparse.Namespace, assistant: QAAssistant | None = None) -> 
     handlers = {
         "status": lambda: assistant.status(),
         "analyze-last-failure": lambda: assistant.analyze_last_failure(),
-        "explain": lambda: assistant.explain_test(args.test_id),
+        "explain-failure": lambda: assistant.explain_failure(args.test_id),
         "summarize-run": lambda: assistant.summarize_run(),
         "generate-bug": lambda: assistant.generate_bug(args.test_id),
-        "search": lambda: assistant.search(args.query),
+        "search-history": lambda: assistant.search(args.query),
+        "compare-runs": lambda: assistant.compare_runs(),
+        "quality-summary": lambda: assistant.quality_summary(),
         "find-flaky-tests": lambda: assistant.find_flaky_tests(),
         "release-readiness": lambda: assistant.release_readiness(),
         "trend": lambda: assistant.trend_analysis(),
-        "explain-widget": lambda: assistant.explain_widget(args.widget),
-        "explain-api": lambda: assistant.explain_api(args.api),
-        "suggest-locator": lambda: assistant.suggest_locator(args.description),
-        "generate-test": lambda: assistant.generate_test(args.description),
-        "dashboard-summary": lambda: assistant.dashboard_summary(),
         "analyze-report": lambda: assistant.analyze_report(args.report),
         "ask": lambda: ChatEngine(assistant).ask(" ".join(args.question)),
     }

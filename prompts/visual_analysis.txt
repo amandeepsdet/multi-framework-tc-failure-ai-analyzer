@@ -1,9 +1,9 @@
-Inspect the attached screenshot of a ThingsBoard dashboard captured at the
+Inspect the attached screenshot of the application under test captured at the
 moment a UI test failed. Answer strictly from what is visible in the image; do
 not speculate beyond the pixels.
 
 Questions:
-- Is an expected widget missing?
+- Is an expected UI element missing?
 - Is a loading spinner still visible?
 - Is the dashboard blank / empty?
 - Is the layout broken or misaligned?

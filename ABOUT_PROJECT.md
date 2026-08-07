@@ -20,119 +20,83 @@ transparently to an LLM when configured.
   dependencies.
 - **Docs:** [PACKAGE_README.md](PACKAGE_README.md) · runnable [`examples/`](examples/) · [Migration Guide](docs/MIGRATION.md).
 
-The ThingsBoard suite described below is the **reference demo project** that
-exercises the SDK end to end.
-
----
-
-## ThingsBoard IoT Dashboard — AI-Assisted Test Automation Platform (SDK demo)
-
-A production-grade **test automation framework** for the ThingsBoard **Fuel Level
-Monitoring** dashboard, extended with an **enterprise AI Failure Analysis Engine**
-and an **interactive QA AI Assistant**.
-
-In one line: it doesn't just tell you a test *failed* — it tells you **why it
-failed, what broke, who should fix it, how confident it is, and how to fix it**,
-then writes the bug report for you.
-
 ---
 
 ## 1. What is this, in plain words?
 
-Imagine you have an IoT dashboard that shows fuel tanks — their fuel level,
-temperature, battery, and connection status. You need to prove, automatically,
-that:
+Most test frameworks only tell you that a test **failed**. AIQA tells you **why
+it failed, what broke, who should fix it, how confident it is, and how to fix
+it** — then writes the bug report for you.
 
-- the website loads and lets you log in,
-- the dashboard shows the right data in valid ranges,
-- the data refreshes in real time,
-- the backend REST APIs behind it work and are secure.
-
-This project does all of that automatically. And when something breaks, an AI
-layer investigates the failure like a senior engineer would.
-
-The project has **two halves**:
-
-| Half | What it does |
-|------|--------------|
-| **Core framework** | Runs UI + API tests against ThingsBoard and reports PASS/FAIL with screenshots, logs, and rich reports. |
-| **AI layer** | On any failure, performs automatic root-cause analysis, generates a bug report, learns from history, and answers your questions in plain English. |
+It plugs into whatever you already use to run tests. When a test fails, an
+adapter captures the evidence, the AI engine investigates the failure like a
+senior engineer would, and the result is rendered as a report and added to a
+run-history dashboard.
 
 ---
 
-## 2. What the core framework does
+## 2. The core idea
 
-### Two layers of testing
-- **UI automation (Playwright)** — drives a real browser (Chromium/Firefox/WebKit):
-  login, dashboard loading, telemetry columns, value ranges, and live refresh.
-- **API automation (requests)** — hits the ThingsBoard REST API: JWT login,
-  device discovery, telemetry retrieval, and negative/security cases.
+```
+Adapters  →  FailureContext  →  AI Analysis Engine  →  AnalysisResult  →  Reporters
+```
 
-### 16 automated test cases (TC-01 … TC-16)
-- **Login:** form present, valid login, invalid login, empty credentials.
-- **Dashboard:** loads and not blank, telemetry columns present, values in range,
-  real-time refresh.
-- **API:** auth returns JWT, unauthorized rejected, wrong password rejected,
-  tampered/expired token rejected, device list, telemetry structure/types,
-  telemetry ranges, missing-device handling.
-
-### Engineering qualities
-- **Page Object Model** — UI selectors and actions isolated from tests.
-- **Reusable API client** — centralised JWT auth, retries, error handling.
-- **Config-driven** — every URL, credential, timeout, and range lives in one
-  place (`utils/config.py`) and is overridable by environment variables.
-- **Secrets management** — credentials come from `.env` / env vars, never
-  committed.
-- **Rich reporting** — Allure (primary) + self-contained pytest-html (fallback).
-- **Automatic diagnostics** — screenshot-on-failure, video retention, timestamped
-  logs.
-- **CI/CD-ready** — headless mode, env-based secrets, machine-readable reports,
-  predictable artifact folders.
+- **Adapters** — the only layer that knows a framework. Each one (Playwright,
+  Selenium, Robot Framework, pytest, or the generic JSON adapter) produces a
+  `FailureContext`.
+- **`FailureContext`** — a pure, framework-agnostic snapshot of the failure:
+  exception, assertion, screenshot, DOM, console logs, network calls, API
+  responses, and metadata.
+- **AI Analysis Engine** — accepts only a `FailureContext` and returns an
+  `AnalysisResult`. It never imports a framework or an application.
+- **`AnalysisResult`** — root cause, category, confidence, severity, owning team,
+  grounded evidence, and a fix recommendation.
+- **Reporters** — render an `AnalysisResult` as Markdown, JSON, HTML, or a
+  console summary, build a tracker-ready bug report, or feed the `QualityPortal`
+  run-history dashboard.
 
 ---
 
-## 3. What the AI layer adds (the differentiator)
+## 3. What the AI layer does on every failure
 
-Normally a test framework only says:
+Normally a framework only says:
 
-> ❌ FAIL — "Widget not found"
+> ❌ FAIL — "Element not found"
 
-This framework instead answers:
+AIQA instead answers:
 
-> 🧠 **Root cause:** A backend service returned HTTP 500, so the widget had no
+> 🧠 **Root cause:** A backend service returned HTTP 500, so the page had no
 > data to render.
 > **Category:** Backend &nbsp;|&nbsp; **Confidence:** 92% &nbsp;|&nbsp;
 > **Severity:** Critical &nbsp;|&nbsp; **Likely owner:** Backend / Platform team
-> **Evidence:** Network status 500 · empty DOM widget · assertion message
+> **Evidence:** Network status 500 · console error · assertion message
 > **Recommended fix:** Inspect server logs for the failing endpoint; the defect
 > is server-side, not in the test.
 
-### On every failure it automatically:
-1. **Collects evidence** — screenshot, stacktrace, exception, assertion, current
-   URL + page title, full DOM, browser console logs, network requests
-   (method/url/status), API responses, and test metadata (browser, OS, Python
-   version, git commit, timestamp, execution time, framework version).
-2. **Stores it** as structured JSON in `failure_history/` (a searchable database).
-3. **Analyses the root cause** — classifies into one of 15 categories (UI,
-   Backend, API, Authentication, Authorization, Locator, Network, Performance,
-   Infrastructure, Browser, Environment, Data, Configuration, Flaky Test,
-   Unknown) with an **explained confidence score**.
-4. **Finds similar past failures** (RAG) — "this failure resembles 3 previous
-   ones" — from a vector database.
-5. **Generates a bug report** — title, steps, expected/actual, severity,
-   priority, owner, root cause, suggested fix — in Markdown, JSON, and HTML.
-6. **Embeds the analysis** into the pytest-html report and attaches it to Allure.
+On every failure it automatically:
 
-### It also does higher-level analysis:
-- **Trend analysis** — most common failures, category distribution, flaky tests,
-  most-failing APIs/widgets, average runtime, day-by-day failure trend.
-- **Release readiness** — a 0–100 score, a risk band (Low/Medium/High/Critical),
-  and a **Release / Investigate / Block** recommendation.
-- **Locator analysis** — when a UI selector breaks, it compares the expected
-  locator against the live DOM and suggests replacements with similarity scores.
-- **Visual analysis** (optional) — with a vision-capable model, inspects the
-  failure screenshot: Is a widget missing? A spinner stuck? The dashboard blank?
-  Layout broken? Login page shown?
+1. **Collects evidence** — exception, stacktrace, assertion, screenshot, DOM,
+   console logs, network requests (method/url/status), API responses, and test
+   metadata — into a `FailureContext`.
+2. **Analyses the root cause** — classifies the failure (UI, Backend, API,
+   Authentication, Authorization, Locator, Network, Performance, Infrastructure,
+   Browser, Environment, Data, Configuration, Flaky Test, Unknown) with an
+   **explained confidence score**.
+3. **Finds similar past failures** (RAG) — "this failure resembles 3 previous
+   ones" — from a pure-Python similarity index.
+4. **Generates a fix recommendation** and a **bug report** — title, steps,
+   expected/actual, severity, priority, owner, root cause, suggested fix — in
+   Markdown, JSON, and HTML.
+5. **Updates the run-history dashboard** — quality score, release readiness,
+   trends, flaky detection, and run comparison.
+
+### Higher-level analysis
+- **Trend analytics** — most common failures, category distribution, flaky
+  tests, and a day-by-day failure trend.
+- **Release readiness** — a 0–100 score, a risk band, and a
+  **Release / Investigate / Block** recommendation.
+- **Failure clustering** — groups failures into Authentication / Security /
+  Backend / UI / Timeout / Network / Infrastructure themes.
 
 ### Grounded and safe by design
 - **No hallucinations** — every recommendation references actual collected
@@ -144,48 +108,34 @@ This framework instead answers:
 
 ## 4. The QA AI Assistant (talk to your test suite)
 
-A command-line + conversational assistant that lets you interrogate the framework
-in plain English.
+A command-line + conversational assistant lets you interrogate the run history in
+plain English.
 
 ```powershell
 python qa_ai.py analyze-last-failure
-python qa_ai.py explain tests/test_ai_demo.py::test_demo_wrong_locator
-python qa_ai.py search "temperature widget failures"
+python qa_ai.py explain tests/test_ai_demo.py::test_ai_failure_analysis_end_to_end
 python qa_ai.py find-flaky-tests
 python qa_ai.py release-readiness
-python qa_ai.py explain-widget FuelLevel
 python qa_ai.py generate-bug
-python qa_ai.py suggest-locator "Fuel Level"
-python qa_ai.py generate-test "Battery widget"
 python qa_ai.py                # interactive chat mode
 ```
 
-It understands natural language such as:
-- "Why did TC-07 fail?"
-- "Which tests are flaky?"
-- "Are we ready to release?"
-- "Generate a Jira bug."
-- "Which APIs fail most often?"
-- "Suggest a Playwright locator for Fuel Level."
-
-Each request is routed to a modular **tool** (e.g. `AnalyzeFailureTool`,
-`SearchHistoryTool`, `ReleaseReadinessTool`, `TrendAnalysisTool`) that grounds its
-answer in the failure history + framework knowledge before responding.
+It understands questions such as "Why did the last run fail?", "Which tests are
+flaky?", "Are we ready to release?", and "Generate a Jira bug." Each request is
+routed to a modular **tool** that grounds its answer in the failure history
+before responding.
 
 ---
 
 ## 5. Key capability: works with **zero setup and zero cost**
 
-This is important: the AI layer is **off by default** and, when turned on, runs
-**fully offline** with:
+The AI layer runs **fully offline** by default with:
 - a **deterministic heuristic analyzer** (rule-based, no LLM),
-- a **pure-Python vector store** (no external database),
+- a **pure-Python similarity index** (no external database),
 - **local JSON** failure history.
 
-No API keys. No extra installs. No internet. So the whole project **runs on a
-fresh machine** by just following the README.
-
-When you *want* more power, flip a config switch to use a real LLM:
+No API keys. No extra installs. No internet. When you *want* more power, flip a
+config switch to use a real LLM:
 
 | Provider | How |
 |----------|-----|
@@ -199,33 +149,20 @@ Nothing else in the code changes — the provider is swapped by configuration on
 
 ---
 
-## 6. How it all fits together
+## 6. The demo, in one file
+
+A single, framework-agnostic demo lives in
+[`tests/test_ai_demo.py`](tests/test_ai_demo.py). It walks the whole product
+story without a browser or an application under test:
 
 ```
-                        ┌──────────────────────────────┐
-   You run:  pytest ───►│  Core tests (UI + API)       │
-                        └──────────────┬───────────────┘
-                                       │  a test fails
-                                       ▼
-                        ┌──────────────────────────────┐
-                        │  conftest failure hook        │
-                        │  → collect all evidence       │
-                        └──────────────┬───────────────┘
-                                       ▼
-                        ┌──────────────────────────────┐
-                        │  AIEngine                     │
-                        │  ├─ analyze root cause        │
-                        │  ├─ retrieve similar (RAG)    │
-                        │  ├─ generate bug report       │
-                        │  └─ store history + vectors   │
-                        └──────────────┬───────────────┘
-                                       ▼
-                 Allure + pytest-html reports  &  ai_reports/
-                                       ▲
-                                       │  ask questions anytime
-                        ┌──────────────┴───────────────┐
-   You run: qa_ai.py ──►│  QA AI Assistant (CLI/chat)  │
-                        └──────────────────────────────┘
+a test fails → evidence is collected → the AI analyzes the failure →
+root cause + fix are generated → reports are saved (md/json/html + bug report) →
+the run-history dashboard updates
+```
+
+```powershell
+pytest tests/test_ai_demo.py -v -o addopts=""
 ```
 
 ---
@@ -233,42 +170,24 @@ Nothing else in the code changes — the provider is swapped by configuration on
 ## 7. Project structure at a glance
 
 ```
-AmanDeep_ABB_Assignment/
-├── pages/              # Page Object Model (login, dashboard) — UI selectors/actions
-├── tests/              # 16 UI + API test cases, fixtures, and offline AI unit tests
-├── utils/              # config, logger, helpers, ThingsBoard API client
-├── ai/                 # AI Failure Analysis Engine (analyzer, LLM clients,
-│                       #   evidence, RAG, reports, bug generator, trends)
-├── assistant/          # QA AI Assistant (CLI + chat + modular tools, MCP-ready)
+multi-framework-tc-failure-ai-analyzer/
+├── aiqa/               # the SDK: core domain, adapters, analysis engine, reporting
+│   ├── core/           #   pure, framework-agnostic models + interfaces
+│   ├── adapters/       #   Playwright, Selenium, Robot Framework, pytest, generic JSON
+│   ├── analysis/       #   FailureAnalyzer (offline heuristics + optional LLM) + RAG
+│   └── reporting/      #   reporters (md/json/html/console), bug builder, QualityPortal
+├── qa_ai_engine/       # backward-compatible pytest + Playwright plugin + assistant
 ├── prompts/            # external, editable AI prompt templates
-├── docs/               # test cases, bug report, and this document
-├── failure_history/    # structured failure JSON (runtime)
-├── ai_reports/         # AI analysis + bug reports md/json/html (runtime)
-├── vector_db/          # RAG similarity index (runtime)
-├── qa_ai.py            # assistant entry point
-├── requirements.txt    # core deps (AI extras optional/commented)
-├── pytest.ini          # run config + markers (ui/api/realtime/negative/ai)
-├── README.md           # full setup + usage guide
-└── skill.md            # how the codebase is wired (for AI agents/contributors)
+├── examples/           # runnable examples (generic, pytest, Playwright, Selenium, JSON)
+├── tests/              # SDK unit tests + the single end-to-end demo test
+├── docs/               # migration guide, demo storyboard, images
+├── qa_ai.py            # QA AI Assistant CLI entry point
+└── README.md           # product front door
 ```
 
 ---
 
-## 8. Technology stack
-
-| Tool | Role |
-|------|------|
-| **Python + Pytest** | Test runner, fixtures, markers, parametrization |
-| **Playwright** | Cross-browser UI automation with auto-waiting |
-| **requests** | REST API automation |
-| **Allure + pytest-html** | Rich, shareable test reports |
-| **python-dotenv** | Secrets/config from `.env` |
-| **(Optional) OpenAI / Azure / Claude / Gemini / Ollama** | LLM-powered analysis |
-| **(Optional) ChromaDB** | Scalable vector search for RAG |
-
----
-
-## 9. Who is it for and why it matters
+## 8. Who is it for and why it matters
 
 - **QA engineers** — stop triaging failures by hand; get a categorised root cause
   and a ready bug report instantly.
@@ -277,35 +196,29 @@ AmanDeep_ABB_Assignment/
 - **Managers / release owners** — get a data-driven release-readiness score and
   trend insights instead of a wall of red/green.
 
-It is designed to look and behave like an **AI-assisted Quality Engineering
-platform** you might find inside a large tech company — modular, extensible,
-secure, documented, and safe to run anywhere.
+It is designed to behave like an **AI-assisted Quality Engineering platform** you
+might find inside a large tech company — modular, extensible, secure, documented,
+and safe to run anywhere.
 
 ---
 
-## 10. Quick start
+## 9. Quick start
 
 ```powershell
-# 1. Setup (see README §9 for details)
+# 1. Setup
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python -m playwright install
-copy .env.example .env      # then add TB_PASSWORD
 
-# 2. Run the tests
-pytest                       # full suite (UI + API) with reports
+# 2. Run the demo (offline, no keys)
+pytest tests/test_ai_demo.py -v -o addopts=""
 
-# 3. (Optional) Turn on the AI layer — offline, no keys needed
-$env:AI_ENABLED = "true"
-pytest
-
-# 4. Ask the assistant
-python qa_ai.py release-readiness
-python qa_ai.py              # interactive chat
+# 3. (Optional) Turn on the run-history dashboard, then open reports/index.html
+$env:AIQA_PORTAL = "true"
+pytest -o addopts=""
 ```
 
 ---
 
-*For full setup and execution details, see [README.md](../README.md). For how the
-codebase is wired internally, see [skill.md](../skill.md).*
+*For the full product overview see [README.md](README.md); for the SDK API see
+[PACKAGE_README.md](PACKAGE_README.md).*

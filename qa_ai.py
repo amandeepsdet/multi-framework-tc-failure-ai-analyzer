@@ -4,19 +4,16 @@
 Examples::
 
     python qa_ai.py analyze-last-failure
-    python qa_ai.py explain tests/test_ai_demo.py::test_demo_wrong_locator
+    python qa_ai.py explain-failure tests/test_ai_demo.py::test_ai_failure_analysis_end_to_end
     python qa_ai.py summarize-run
     python qa_ai.py generate-bug
-    python qa_ai.py search "temperature widget failures"
+    python qa_ai.py search-history "backend 500 failures"
+    python qa_ai.py compare-runs
+    python qa_ai.py quality-summary
     python qa_ai.py find-flaky-tests
     python qa_ai.py release-readiness
-    python qa_ai.py explain-widget FuelLevel
-    python qa_ai.py explain-api telemetry
-    python qa_ai.py suggest-locator "Fuel Level"
-    python qa_ai.py generate-test "Battery widget"
-    python qa_ai.py dashboard-summary
     python qa_ai.py analyze-report reports/report.html
-    python qa_ai.py ask "Why did TC-07 fail?"
+    python qa_ai.py ask "Why did the last run fail?"
     python qa_ai.py                # interactive chat mode
 
 The heavy lifting lives in the reusable ``assistant`` package so the same

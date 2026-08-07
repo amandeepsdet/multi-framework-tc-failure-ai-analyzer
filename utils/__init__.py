@@ -1,1 +1,1 @@
-"""Package marker for the utils layer (config, logging, API client, helpers)."""
+"""Package marker for the utils layer (logging)."""

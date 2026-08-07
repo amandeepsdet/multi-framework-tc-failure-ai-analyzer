@@ -1,0 +1,24 @@
+{
+  "updated": "2026-08-07T15:20:23.655008+00:00",
+  "signatures": {
+    "31554193f46e": {
+      "signature": "31554193f46e",
+      "test_id": "checkout::test_pay",
+      "test_name": "checkout::test_pay",
+      "category": "Backend",
+      "root_cause": "A backend service returned HTTP 500; the client could not obtain valid data.",
+      "owner": "Backend / Platform team",
+      "suggested_fix": "Inspect server logs for the failing endpoint; the defect is server-side, not in the test.",
+      "framework": "pytest",
+      "occurrences": 1,
+      "avg_confidence": 92.0,
+      "first_seen": "2026-08-07T15:20:23.627489+00:00",
+      "last_seen": "2026-08-07T15:20:23.627489+00:00",
+      "last_run_id": "run_20260807_205023",
+      "fixes": {
+        "Inspect server logs for the failing endpoint; the defect is server-side, not in the test.": 1
+      },
+      "confidence_sum": 92
+    }
+  }
+}

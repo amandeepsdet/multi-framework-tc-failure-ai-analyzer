@@ -1,65 +1,87 @@
-"""DEMO tests for the AI Failure Analysis Engine & QA Assistant.
+"""Generic demo: turn a failing test into an AI root cause and bug report.
 
-These two tests FAIL ON PURPOSE so you can watch the AI engine classify a
-real UI locator failure and a real API/backend failure end-to-end.
+This is the single, framework-agnostic demonstration of the AIQA SDK. It builds
+a :class:`FailureContext` the way any adapter would, runs the offline AI
+analyzer (no API keys, no network, no browser), and writes Markdown / JSON /
+HTML reports plus a tracker-ready bug report — the same flow that runs
+automatically when a real test fails in any framework.
 
-    Run them with the engine ON:
-        $env:AI_ENABLED="true"
-        pytest tests/test_ai_demo.py -v -o addopts=""
+Story:
+    a test fails -> evidence is collected -> the AI analyzes the failure ->
+    a root cause + fix are generated -> reports are saved.
 
-Delete this file when you are done demoing (it is not part of the real suite).
+Run it:
+    pytest tests/test_ai_demo.py -v -o addopts=""
 """
 
 from __future__ import annotations
 
-import allure
+import json
+from pathlib import Path
+
 import pytest
 
-from pages.login_page import LoginPage
-from utils.api_client import ThingsBoardAPIClient
-from utils.config import config
-from utils.logger import get_logger
+from aiqa import FailureAnalyzer, FailureContext, render
+from aiqa.reporting import BugReportBuilder
 
-logger = get_logger("test_ai_demo")
+_REPORTS_DIR = Path(__file__).resolve().parent.parent / "ai_reports"
 
 
-# --------------------------------------------------------------------------- #
-# DEMO 1: UI automation with a WRONG LOCATOR                                   #
-# --------------------------------------------------------------------------- #
-@allure.feature("DEMO - AI Engine")
-@allure.story("UI locator failure")
-@allure.title("DEMO-UI: Wrong locator makes the element wait time out")
-@pytest.mark.ui
-def test_demo_wrong_locator(login_page: LoginPage) -> None:
-    """The selector below is intentionally wrong, so Playwright times out.
+@pytest.fixture
+def failing_test_context() -> FailureContext:
+    """Evidence captured from a checkout test whose payment call returns 500.
 
-    Expected AI classification: category=Locator/Element, with a suggested
-    correct selector from the LocatorAnalyzer.
+    In real usage a framework adapter (Playwright, Selenium, pytest, Robot
+    Framework, or the generic JSON adapter) produces this object. Here it is
+    built by hand so the demo needs no application under test.
     """
-    logger.info("START test_demo_wrong_locator")
-    # Real selector is  input[formcontrolname='username']  — this one is wrong:
-    wrong = login_page.page.locator("input#totally-wrong-username-id")
-    wrong.wait_for(state="visible", timeout=3000)  # -> TimeoutError (locator)
-    assert wrong.is_visible(), "Username field not found with the given locator"
-    logger.info("END test_demo_wrong_locator")
+    return FailureContext.from_dict(
+        {
+            "metadata": {"test_name": "checkout::test_pay", "framework": "pytest"},
+            "exception": {
+                "type": "AssertionError",
+                "message": "expected 200 but server returned HTTP 500",
+            },
+            "evidence": {
+                "network": [{"method": "POST", "url": "/api/pay", "status": 500}],
+                "console": [{"type": "error", "text": "Payment request failed"}],
+            },
+        }
+    )
 
 
-# --------------------------------------------------------------------------- #
-# DEMO 2: API automation with a BACKEND / AUTH FAILURE                        #
-# --------------------------------------------------------------------------- #
-@allure.feature("DEMO - AI Engine")
-@allure.story("API backend failure")
-@allure.title("DEMO-API: Authentication request is rejected by the backend")
-@pytest.mark.api
-def test_demo_api_backend_failure(api_client: ThingsBoardAPIClient) -> None:
-    """Send a login request with a wrong password.
+@pytest.mark.demo
+def test_ai_failure_analysis_end_to_end(failing_test_context: FailureContext) -> None:
+    """Watch the SDK go from a failure to a root cause, fix, and bug report."""
+    # 1. The offline AI engine analyzes the failure (deterministic, no keys).
+    result = FailureAnalyzer().analyze(failing_test_context)
 
-    The ThingsBoard backend responds with HTTP 401, the client raises
-    ThingsBoardAPIError, and the AI engine should classify this as an
-    Authentication failure routed to the Identity / Auth team.
-    """
-    logger.info("START test_demo_api_backend_failure")
-    client = ThingsBoardAPIClient()
-    token = client.login_with(config.username, "this-password-is-wrong")
-    assert token, "Expected a JWT token from the login call"
-    logger.info("END test_demo_api_backend_failure")
+    # 2. Evidence-grounded root cause, confidence, category, and owning team.
+    assert result.root_cause.summary
+    assert 0 <= result.confidence.value <= 100
+    assert result.category.value == "Backend"  # HTTP 500 -> Backend
+    assert result.owner
+    assert result.evidence  # every claim is grounded in a real signal
+
+    # 3. A concrete, actionable fix recommendation is produced.
+    assert result.recommendations
+
+    # 4. The result renders in every reporting format and is saved to disk.
+    _REPORTS_DIR.mkdir(exist_ok=True)
+    (_REPORTS_DIR / "demo_analysis.md").write_text(
+        render(result, "markdown", failing_test_context), encoding="utf-8"
+    )
+    (_REPORTS_DIR / "demo_analysis.json").write_text(
+        render(result, "json", failing_test_context), encoding="utf-8"
+    )
+    (_REPORTS_DIR / "demo_analysis.html").write_text(
+        render(result, "html", failing_test_context), encoding="utf-8"
+    )
+    assert json.loads((_REPORTS_DIR / "demo_analysis.json").read_text(encoding="utf-8"))
+
+    # 5. A tracker-ready bug report is generated and saved as Markdown.
+    bug = BugReportBuilder().build(result, failing_test_context)
+    assert bug.title.startswith("[Backend]")
+    (_REPORTS_DIR / "demo_bug_report.md").write_text(
+        BugReportBuilder.to_markdown(bug), encoding="utf-8"
+    )

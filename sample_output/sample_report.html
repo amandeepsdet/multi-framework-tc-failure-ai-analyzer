@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>AI Failure Analysis — checkout::test_pay</title>
+<style>
+ body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;color:#1f2933;}
+ .badge{display:inline-block;padding:.2rem .6rem;border-radius:.4rem;background:#e4e7eb;margin-right:.4rem;}
+ h1{font-size:1.4rem;} h2{font-size:1.1rem;margin-top:1.4rem;}
+ code,pre{background:#f5f7fa;border-radius:.3rem;padding:.1rem .3rem;}
+</style></head><body>
+<h1>AI Failure Analysis — checkout::test_pay</h1>
+<p>
+ <span class="badge">Category: Backend</span>
+ <span class="badge">Confidence: 92%</span>
+ <span class="badge">Severity: Critical</span>
+ <span class="badge">Owner: Backend / Platform team</span>
+ <span class="badge">Source: heuristic</span>
+</p>
+<h2>Root cause</h2><p>A backend service returned HTTP 500; the client could not obtain valid data.</p>
+<p>Inspect server logs for the failing endpoint; the defect is server-side, not in the test.</p>
+<h2>Evidence</h2><ul><li>Assertion: expected 200 but server returned HTTP 500</li><li>Exception: AssertionError</li><li>Network status codes observed: 500</li><li>Console errors: 1 (e.g. Payment request failed)</li></ul>
+<h2>Recommendations</h2><ul><li><strong>Inspect server logs for the failing endpoint; the defect is server-side, not in the test.</strong></li></ul>
+
+<h2>Reasoning</h2><p>Deterministic heuristic analysis. Configure an LLM provider for deeper natural-language reasoning.</p>
+</body></html>

@@ -46,7 +46,7 @@ def test_prompt_builder_preserves_json_braces() -> None:
 @pytest.mark.ai
 def test_json_vector_store_search(tmp_path) -> None:
     store = JSONVectorStore(tmp_path / "v.json", HashEmbedder(128))
-    store.add("1", "backend returned HTTP 500 empty widget", {"category": "Backend"})
+    store.add("1", "backend returned HTTP 500 empty response", {"category": "Backend"})
     store.add("2", "login username password field", {"category": "UI"})
     hits = store.search("HTTP 500 backend failure", top_k=2)
     assert hits and hits[0].metadata["category"] == "Backend"
@@ -102,17 +102,19 @@ def test_assistant_status_and_search(tmp_config: AIConfig) -> None:
 
 
 @pytest.mark.ai
-def test_assistant_explain_widget() -> None:
-    assistant = QAAssistant()
-    out = assistant.explain_widget("FuelLevel")
-    assert "fuel" in out["explanation"].lower()
+def test_assistant_quality_summary(tmp_config: AIConfig) -> None:
+    assistant = QAAssistant(AIEngine(tmp_config))
+    out = assistant.quality_summary()
+    assert "release_readiness" in out
+    assert "total_failures" in out
 
 
 @pytest.mark.ai
-def test_assistant_generate_test_skeleton() -> None:
-    assistant = QAAssistant()
-    out = assistant.generate_test("Battery widget")
-    assert "def test_" in out["code"]
+def test_assistant_compare_runs(tmp_config: AIConfig) -> None:
+    assistant = QAAssistant(AIEngine(tmp_config))
+    out = assistant.compare_runs()
+    # With no history this returns a friendly message; the key point is it runs.
+    assert isinstance(out, dict)
 
 
 @pytest.mark.ai
