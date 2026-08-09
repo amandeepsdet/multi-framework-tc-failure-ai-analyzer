@@ -35,3 +35,7 @@ build/
 dist/
 *.egg-info/
 .eggs/
+
+# Local scratch / assets not part of the package
+upload.png
+sample_output/

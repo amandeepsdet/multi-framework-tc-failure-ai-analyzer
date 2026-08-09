@@ -4,6 +4,32 @@ All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and the
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [3.2.0] — 2026-08-09
+
+Enterprise AI capabilities. Purely additive and fully backward compatible — the
+architecture, public APIs, adapters, and existing reports are unchanged, and no
+new runtime dependencies are introduced (everything is standard-library, offline).
+
+### Added
+- **Intelligent Failure Classification** — expanded `FailureCategory`, a new
+  `RiskLevel`, `subcategory`/`reason` on `RootCause`, and `risk_level` on
+  `AnalysisResult`. New `FailureClassifier` produces a structured `Classification`
+  (category, subcategory, confidence, owner, risk, reason); new `OwnerResolver`
+  makes team routing overridable.
+- **AI Confidence Reasoning** — new `ConfidenceReasoning` attached to every
+  `AnalysisResult` (`result.reasoning_detail`) explaining the verdict with a
+  confidence badge, supporting signals, conflicting evidence, and a
+  low-confidence note. Rendered in the console, Markdown, HTML and JSON reports.
+- **AI Locator Healing** (`aiqa.healing`) — `LocatorHealingEngine` /
+  `heal_locator` recover a broken locator from a DOM snapshot and emit ranked,
+  multi-framework suggestions (Playwright, Selenium, CSS, XPath, Robot Framework).
+- **Intelligent Bug Generator** — `BugGenerationEngine` builds a professional,
+  enriched `BugReport`; `BugExporter` exports Markdown/HTML/JSON/plaintext, Jira,
+  Azure Boards, GitHub Issues and Linear (plus `export_all`).
+- **`aiqa` command-line interface** — `classify`, `explain-failure`,
+  `heal-locator`, `generate-bug` subcommands (console script and `python -m aiqa`).
+- New examples and expanded API reference / README documentation.
+
 ## [3.1.0] — 2026-08-03
 
 Minor release. Adds a new **multi-run reporting layer** on top of the existing

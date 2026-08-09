@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "multi-framework-tc-failure-ai-analyzer"
-version = "3.1.0"
+version = "3.2.0"
 description = "A framework-agnostic, AI-powered Quality Engineering SDK. Turns a failing test from ANY automation framework (Playwright, Selenium, Robot Framework, pytest, Cypress, ...) into an evidence-grounded root-cause analysis, confidence score, owner, and tracker-ready bug report. Adapter-based core, works fully offline with zero API keys. (Formerly published as playwright-tc-failure-ai-analyzer.)"
 readme = "PACKAGE_README.md"
 requires-python = ">=3.11"
@@ -76,6 +76,7 @@ Source = "https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer
 # Console entry point for the interactive QA assistant / CLI.
 [project.scripts]
 qa-ai = "qa_ai_engine.assistant.commands:run"
+aiqa = "aiqa.cli:main"
 
 # Auto-discovered by pytest so failure analysis works with zero wiring.
 [project.entry-points.pytest11]
@@ -88,7 +89,9 @@ packages = [
     "aiqa",
     "aiqa.core",
     "aiqa.analysis",
+    "aiqa.healing",
     "aiqa.reporting",
+    "aiqa.reporting.bug",
     "aiqa.reporting.portal",
     "aiqa.adapters",
     "qa_ai_engine",

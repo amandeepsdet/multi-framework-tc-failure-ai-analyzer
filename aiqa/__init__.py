@@ -28,11 +28,21 @@ Quick start::
 from __future__ import annotations
 
 from . import adapters
-from .analysis import FailureAnalyzer, InMemoryIndex, NullIndex, OfflineProvider, OpenAIProvider
+from .analysis import (
+    Classification,
+    FailureAnalyzer,
+    FailureClassifier,
+    InMemoryIndex,
+    NullIndex,
+    OfflineProvider,
+    OpenAIProvider,
+    OwnerResolver,
+)
 from .config import AiqaConfig, config
 from .core import (
     AnalysisResult,
     BugReport,
+    ConfidenceReasoning,
     ConfidenceScore,
     ConsoleMessage,
     Evidence,
@@ -45,19 +55,31 @@ from .core import (
     LogEntry,
     NetworkEvent,
     Recommendation,
+    RiskLevel,
     RootCause,
     Severity,
     SimilarFailure,
 )
 from .core.interfaces import Analyzer, FrameworkAdapter, LLMProvider, Reporter, SimilarityIndex
-from .reporting import BugReportBuilder, QualityPortal, available_formats, get_reporter
+from .healing import HealingResult, LocatorHealingEngine, LocatorRanker, LocatorSuggestion, heal_locator
+from .reporting import (
+    BugExporter,
+    BugGenerationEngine,
+    BugReportBuilder,
+    QualityPortal,
+    available_formats,
+    get_reporter,
+)
 
-__version__ = "3.1.0"
+__version__ = "3.2.0"
 
 __all__ = [
     "__version__",
     # engine
     "FailureAnalyzer",
+    "FailureClassifier",
+    "Classification",
+    "OwnerResolver",
     "analyze",
     "render",
     # domain
@@ -75,8 +97,10 @@ __all__ = [
     "RootCause",
     "Recommendation",
     "ConfidenceScore",
+    "ConfidenceReasoning",
     "SimilarFailure",
     "FailureCategory",
+    "RiskLevel",
     "Severity",
     # interfaces (extension points)
     "Analyzer",
@@ -91,9 +115,17 @@ __all__ = [
     "NullIndex",
     # reporting
     "BugReportBuilder",
+    "BugGenerationEngine",
+    "BugExporter",
     "QualityPortal",
     "available_formats",
     "get_reporter",
+    # locator healing
+    "LocatorHealingEngine",
+    "LocatorRanker",
+    "HealingResult",
+    "LocatorSuggestion",
+    "heal_locator",
     # config + subpackages
     "AiqaConfig",
     "config",

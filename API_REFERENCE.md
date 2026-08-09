@@ -11,6 +11,12 @@ from aiqa import (
     render, get_reporter, available_formats,
     BugReportBuilder, QualityPortal,
     AiqaConfig, config,
+    # Phase 1 — enterprise AI capabilities
+    FailureClassifier, Classification, OwnerResolver, RiskLevel,
+    ConfidenceReasoning,
+    LocatorHealingEngine, LocatorRanker, HealingResult, LocatorSuggestion,
+    heal_locator,
+    BugGenerationEngine, BugExporter,
 )
 from aiqa.adapters import (
     GenericAdapter, PytestAdapter, SeleniumAdapter,
@@ -250,3 +256,104 @@ See runnable usage for each in [examples/](examples/) and
 environment variables (e.g. `AIQA_REPORTS_DIR`, `AI_MASK_SECRETS`,
 `AI_MASK_URLS`, and provider keys). Prefer injecting a config rather than relying
 on globals in library code.
+
+---
+
+## Phase 1 — Enterprise AI capabilities
+
+All additions are framework-agnostic, offline-capable, and fully backward
+compatible: existing APIs, adapters, and reports are unchanged.
+
+### Intelligent Failure Classification
+
+Every `AnalysisResult` now also carries `risk_level` (Critical/High/Medium/Low),
+a `subcategory` and `reason` on its `root_cause`, and a `reasoning_detail`
+(see below). For a standalone, structured verdict use `FailureClassifier`:
+
+```python
+from aiqa import FailureClassifier
+
+c = FailureClassifier().classify(context)
+c.category      # FailureCategory
+c.subcategory   # e.g. "HTTP 500 Server Error"
+c.confidence    # int 0..100
+c.risk_level    # "Critical" | "High" | "Medium" | "Low"
+c.owner         # resolved team, e.g. "Backend / Platform team"
+c.reason        # human-readable justification
+c.to_dict()
+```
+
+`OwnerResolver` maps a category to an owning team and is user-overridable:
+
+```python
+from aiqa import OwnerResolver
+from aiqa.core import FailureCategory
+
+resolver = OwnerResolver({FailureCategory.BACKEND: "Payments Squad"})
+resolver.register(FailureCategory.SECURITY, "AppSec").resolve(FailureCategory.SECURITY)
+```
+
+### AI Confidence Reasoning
+
+Every analysis produces an explainable `ConfidenceReasoning` at
+`result.reasoning_detail`, rendered in the console, Markdown, HTML and JSON
+reports.
+
+```python
+r = result.reasoning_detail
+r.badge                # "🟢 High" | "🟡 Medium" | "🔴 Low"
+r.confidence           # int
+r.reasoning_points     # list[str]  — signals that support the verdict
+r.supporting_evidence  # list[str]  — evidence sources used
+r.conflicting_evidence # list[str]  — expected-but-missing corroboration
+r.assessment           # one-sentence summary
+r.low_confidence_note  # populated only when confidence is low
+```
+
+### AI Locator Healing
+
+Recover a broken UI locator from a DOM snapshot. Suggestions are ranked by
+stability (test-id > id > role > name > text > css class) and emitted for every
+supported framework.
+
+```python
+from aiqa import heal_locator     # or LocatorHealingEngine for reuse/injection
+
+result = heal_locator("button.place-order", dom_html, target_text="Place order")
+result.failure_reason              # why the old locator broke
+best = result.best                 # highest-ranked LocatorSuggestion or None
+best.playwright                    # "page.get_by_test_id('place-order-btn')"
+best.selenium, best.css, best.xpath, best.robotframework
+best.quality                       # "Best" | "Good" | "Weak"
+result.to_json()
+```
+
+Empty or malformed DOM never raises — it returns a graceful, un-healed result.
+
+### Intelligent Bug Generator
+
+Turn an analysis into a professional, tracker-ready bug and export it anywhere.
+
+```python
+from aiqa import BugGenerationEngine, BugExporter
+
+bug = BugGenerationEngine().build(result, context)
+exporter = BugExporter()
+exporter.to_markdown(bug)      # also: to_html/to_plaintext/to_json
+exporter.to_jira_json(bug)     # also: to_azure_json/to_github_issue/to_linear_json
+exporter.export_all(bug, "out/")  # writes bug.md/html/json/txt + all trackers
+```
+
+### Command-line interface
+
+Installed as the `aiqa` console script (also `python -m aiqa`):
+
+```bash
+aiqa classify        context.json
+aiqa explain-failure context.json
+aiqa heal-locator    --old "button.place-order" --dom page.html --text "Place order"
+aiqa generate-bug    context.json --format jira      # or --out ./bug
+```
+
+`context.json` is a serialized `FailureContext` (`FailureContext.to_json()`).
+Add `--json` to `classify`/`explain-failure`/`heal-locator` for machine output.

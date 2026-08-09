@@ -300,15 +300,78 @@ class ConfidenceScore:
 
 
 @dataclass
+class ConfidenceReasoning:
+    """Transparent, evidence-grounded explanation of a confidence score.
+
+    Makes every AI conclusion explainable rather than a black box: which signals
+    supported the verdict, which (if any) conflicted, and — when confidence is
+    low — *why* it is low. Purely descriptive and JSON-serialisable.
+    """
+
+    confidence: int = 0
+    reasoning_points: list[str] = field(default_factory=list)
+    supporting_evidence: list[str] = field(default_factory=list)
+    conflicting_evidence: list[str] = field(default_factory=list)
+    assessment: str = ""
+    low_confidence_note: str = ""
+
+    def __post_init__(self) -> None:
+        self.confidence = max(0, min(100, int(self.confidence)))
+
+    @property
+    def level(self) -> str:
+        if self.confidence >= 85:
+            return "High"
+        if self.confidence >= 60:
+            return "Medium"
+        return "Low"
+
+    @property
+    def badge(self) -> str:
+        return {"High": "🟢 High", "Medium": "🟡 Medium", "Low": "🔴 Low"}[self.level]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "confidence": self.confidence,
+            "level": self.level,
+            "badge": self.badge,
+            "reasoning_points": list(self.reasoning_points),
+            "supporting_evidence": list(self.supporting_evidence),
+            "conflicting_evidence": list(self.conflicting_evidence),
+            "assessment": self.assessment,
+            "low_confidence_note": self.low_confidence_note,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ConfidenceReasoning":
+        return cls(
+            confidence=int(data.get("confidence", 0) or 0),
+            reasoning_points=list(data.get("reasoning_points") or []),
+            supporting_evidence=list(data.get("supporting_evidence") or []),
+            conflicting_evidence=list(data.get("conflicting_evidence") or []),
+            assessment=data.get("assessment", ""),
+            low_confidence_note=data.get("low_confidence_note", ""),
+        )
+
+
+@dataclass
 class RootCause:
     """The diagnosed cause of the failure."""
 
     summary: str = ""
     category: FailureCategory = FailureCategory.UNKNOWN
     detail: str = ""
+    subcategory: str = ""
+    reason: str = ""
 
     def to_dict(self) -> dict[str, Any]:
-        return {"summary": self.summary, "category": self.category.value, "detail": self.detail}
+        return {
+            "summary": self.summary,
+            "category": self.category.value,
+            "detail": self.detail,
+            "subcategory": self.subcategory,
+            "reason": self.reason,
+        }
 
 
 @dataclass
@@ -348,6 +411,8 @@ class AnalysisResult:
     similar_failures: list[SimilarFailure] = field(default_factory=list)
     reasoning: str = ""
     source: str = "heuristic"  # "heuristic" | provider name
+    risk_level: str = ""
+    reasoning_detail: "ConfidenceReasoning | None" = None
 
     # -- convenience accessors --------------------------------------------- #
     @property
@@ -365,6 +430,8 @@ class AnalysisResult:
             "similar_failures": [s.to_dict() for s in self.similar_failures],
             "reasoning": self.reasoning,
             "source": self.source,
+            "risk_level": self.risk_level,
+            "reasoning_detail": self.reasoning_detail.to_dict() if self.reasoning_detail else None,
         }
 
     def to_json(self, indent: int = 2) -> str:
@@ -381,6 +448,8 @@ class AnalysisResult:
                 summary=rc.get("summary", data.get("root_cause_summary", "")) if isinstance(rc, dict) else str(rc),
                 category=FailureCategory.coerce(rc.get("category") if isinstance(rc, dict) else data.get("category")),
                 detail=rc.get("detail", "") if isinstance(rc, dict) else "",
+                subcategory=rc.get("subcategory", "") if isinstance(rc, dict) else "",
+                reason=rc.get("reason", "") if isinstance(rc, dict) else "",
             ),
             confidence=ConfidenceScore(
                 value=int(conf.get("value", 0) or 0),
@@ -403,6 +472,11 @@ class AnalysisResult:
             ],
             reasoning=data.get("reasoning", ""),
             source=data.get("source", "heuristic"),
+            risk_level=data.get("risk_level", ""),
+            reasoning_detail=(
+                ConfidenceReasoning.from_dict(data["reasoning_detail"])
+                if isinstance(data.get("reasoning_detail"), dict) else None
+            ),
         )
 
 
@@ -422,6 +496,24 @@ class BugReport:
     owner: str = ""
     root_cause: str = ""
     suggested_fix: str = ""
+    # -- extended (intelligent bug generator) fields; all optional --------- #
+    summary: str = ""
+    category: str = ""
+    subcategory: str = ""
+    framework: str = ""
+    browser: str = ""
+    os: str = ""
+    python_version: str = ""
+    build: str = ""
+    commit: str = ""
+    stacktrace: str = ""
+    logs: list[str] = field(default_factory=list)
+    network: list[str] = field(default_factory=list)
+    screenshots: list[str] = field(default_factory=list)
+    preventive_action: str = ""
+    risk: str = ""
+    confidence: int = 0
+    ai_explanation: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

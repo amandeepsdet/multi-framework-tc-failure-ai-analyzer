@@ -16,9 +16,11 @@ class MarkdownReporter(Reporter):
         lines = [
             f"# AI Failure Analysis — {context.test_name if context else 'test'}",
             "",
-            f"- **Category:** {rc.category.value}",
+            f"- **Category:** {rc.category.value}"
+            + (f" / {rc.subcategory}" if rc.subcategory else ""),
             f"- **Confidence:** {result.confidence.value}%",
             f"- **Severity:** {result.severity.value}",
+            f"- **Risk:** {result.risk_level or 'n/a'}",
             f"- **Owner:** {result.owner}",
             f"- **Source:** {result.source}",
             "",
@@ -29,6 +31,8 @@ class MarkdownReporter(Reporter):
             lines += ["", rc.detail]
         if result.confidence.rationale:
             lines += ["", f"_Confidence rationale: {result.confidence.rationale}_"]
+
+        lines += self._reasoning_section(result)
 
         if result.evidence:
             lines += ["", "## Evidence"]
@@ -51,3 +55,23 @@ class MarkdownReporter(Reporter):
             lines += ["", "## Reasoning", result.reasoning]
 
         return "\n".join(lines) + "\n"
+
+    @staticmethod
+    def _reasoning_section(result: AnalysisResult) -> list[str]:
+        cr = result.reasoning_detail
+        if cr is None:
+            return []
+        out = ["", "## AI Confidence Reasoning", "",
+               f"**{cr.badge} — {cr.confidence}%**", ""]
+        for p in cr.reasoning_points:
+            out.append(f"- ✓ {p}")
+        if cr.conflicting_evidence:
+            out += ["", "**Conflicting / missing signals:**"]
+            out += [f"- ⚠ {c}" for c in cr.conflicting_evidence]
+        if cr.supporting_evidence:
+            out += ["", f"_Evidence used: {', '.join(cr.supporting_evidence)}_"]
+        if cr.low_confidence_note:
+            out += ["", f"> {cr.low_confidence_note}"]
+        if cr.assessment:
+            out += ["", "**Overall assessment:** " + cr.assessment]
+        return out

@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from ..core.enums import FailureCategory, Severity
+from ..core.enums import FailureCategory, RiskLevel, Severity
 from ..core.models import FailureContext
 
 # Treat a 4xx/5xx number as an HTTP status only in an explicit HTTP context, so
@@ -28,6 +28,8 @@ class HeuristicVerdict:
     confidence: int
     summary: str
     recommended_fix: str
+    subcategory: str = ""
+    reason: str = ""
 
 
 _SEVERITY_BY_CATEGORY: dict[FailureCategory, Severity] = {
@@ -52,6 +54,38 @@ _SEVERITY_BY_CATEGORY: dict[FailureCategory, Severity] = {
 
 def severity_for(category: FailureCategory) -> Severity:
     return _SEVERITY_BY_CATEGORY.get(category, Severity.MAJOR)
+
+
+_RISK_BY_CATEGORY: dict[FailureCategory, RiskLevel] = {
+    FailureCategory.BACKEND: RiskLevel.CRITICAL,
+    FailureCategory.API: RiskLevel.CRITICAL,
+    FailureCategory.AUTHENTICATION: RiskLevel.CRITICAL,
+    FailureCategory.SECURITY: RiskLevel.CRITICAL,
+    FailureCategory.INFRASTRUCTURE: RiskLevel.CRITICAL,
+    FailureCategory.DATABASE: RiskLevel.CRITICAL,
+    FailureCategory.AUTHORIZATION: RiskLevel.HIGH,
+    FailureCategory.NETWORK: RiskLevel.HIGH,
+    FailureCategory.DEPENDENCY: RiskLevel.HIGH,
+    FailureCategory.PERFORMANCE: RiskLevel.MEDIUM,
+    FailureCategory.TIMEOUT: RiskLevel.MEDIUM,
+    FailureCategory.LOCATOR: RiskLevel.MEDIUM,
+    FailureCategory.ELEMENT_NOT_FOUND: RiskLevel.MEDIUM,
+    FailureCategory.ELEMENT_NOT_VISIBLE: RiskLevel.MEDIUM,
+    FailureCategory.UI: RiskLevel.MEDIUM,
+    FailureCategory.FRONTEND: RiskLevel.MEDIUM,
+    FailureCategory.ASSERTION: RiskLevel.MEDIUM,
+    FailureCategory.DATA: RiskLevel.MEDIUM,
+    FailureCategory.CONFIGURATION: RiskLevel.MEDIUM,
+    FailureCategory.ENVIRONMENT: RiskLevel.MEDIUM,
+    FailureCategory.BROWSER: RiskLevel.LOW,
+    FailureCategory.MOBILE: RiskLevel.MEDIUM,
+    FailureCategory.FLAKY: RiskLevel.LOW,
+    FailureCategory.UNKNOWN: RiskLevel.MEDIUM,
+}
+
+
+def risk_for(category: FailureCategory) -> RiskLevel:
+    return _RISK_BY_CATEGORY.get(category, RiskLevel.MEDIUM)
 
 
 class HeuristicClassifier:
@@ -82,6 +116,8 @@ class HeuristicClassifier:
                 92,
                 f"A backend service returned HTTP {code}; the client could not obtain valid data.",
                 "Inspect server logs for the failing endpoint; the defect is server-side, not in the test.",
+                subcategory=f"HTTP {code} Server Error",
+                reason=f"HTTP {code} returned from a backend endpoint before the client could proceed.",
             )
         # 2. Authentication / Authorization.
         if 401 in auth_errors or 401 in text_codes or "unauthor" in text or "unauthenticated" in text:
@@ -90,6 +126,8 @@ class HeuristicClassifier:
                 88,
                 "The request was rejected as unauthenticated (HTTP 401).",
                 "Verify credentials/token validity and that authentication succeeded before the protected call.",
+                subcategory="Invalid or expired credentials",
+                reason="HTTP 401 Unauthorized returned before protected resource access.",
             )
         if 403 in auth_errors or 403 in text_codes or "forbidden" in text:
             return HeuristicVerdict(
@@ -97,6 +135,8 @@ class HeuristicClassifier:
                 86,
                 "The authenticated principal lacks permission for the resource (HTTP 403).",
                 "Check the account's roles/permissions for the target resource.",
+                subcategory="Insufficient permissions",
+                reason="HTTP 403 Forbidden returned for the requested resource.",
             )
         # 3. Locator / element issues.
         if any(k in text for k in (
@@ -108,6 +148,8 @@ class HeuristicClassifier:
                 80,
                 "A locator did not resolve to an interactable element within the timeout.",
                 "Compare the expected selector against the current DOM; the UI markup likely changed.",
+                subcategory="Stale or changed selector",
+                reason="Locator failed to resolve within the timeout; the UI markup likely changed.",
             )
         # 4. Timeout / network.
         if any(k in text for k in ("timeout", "timed out", "err_connection", "econnrefused", "unreachable")):

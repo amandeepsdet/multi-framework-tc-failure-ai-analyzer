@@ -19,10 +19,17 @@ class ConsoleReporter(Reporter):
             f"({rc.category.value}, confidence={result.confidence.value}%) "
             f"— owner={result.owner}"
         )
-        if not result.recommendations:
-            return head
-        rec = result.recommendations[0].action
-        return f"{head}\n       fix: {rec}"
+        lines = [head]
+        cr = result.reasoning_detail
+        if cr is not None:
+            lines.append(f"       {cr.badge} confidence — {cr.assessment}")
+            for p in cr.reasoning_points[:5]:
+                lines.append(f"         ✓ {p}")
+            if cr.low_confidence_note:
+                lines.append(f"         ! {cr.low_confidence_note}")
+        if result.recommendations:
+            lines.append(f"       fix: {result.recommendations[0].action}")
+        return "\n".join(lines)
 
     def summary_line(self, result: AnalysisResult, context: FailureContext | None = None) -> str:
         """Convenience one-liner (no newline), handy for logging on failure."""

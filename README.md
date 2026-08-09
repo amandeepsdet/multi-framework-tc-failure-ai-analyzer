@@ -145,6 +145,46 @@ portal.add_failure(result, context)
 portal.finish_run()   # -> reports/index.html (dashboard) + reports/run_*/ (per-run report)
 ```
 
+## Enterprise AI Capabilities
+
+Built on the same offline, framework-agnostic engine — every existing API stays
+unchanged (full backward compatibility):
+
+- **Intelligent Failure Classification** — category + subcategory, owning team,
+  and a `Critical/High/Medium/Low` risk level. Use `FailureClassifier` for a
+  structured verdict and `OwnerResolver` to customise team routing.
+- **AI Confidence Reasoning** — every analysis explains *why* it reached its
+  conclusion via `result.reasoning_detail`: a confidence badge, supporting
+  signals, conflicting evidence, and a low-confidence note when uncertain. It is
+  rendered in the console, Markdown, HTML and JSON reports.
+- **AI Locator Healing** — recover a broken UI locator from a DOM snapshot with
+  `heal_locator(...)`; ranked, multi-framework suggestions (Playwright, Selenium,
+  CSS, XPath, Robot Framework).
+- **Intelligent Bug Generator** — `BugGenerationEngine` + `BugExporter` produce a
+  professional bug and export to Markdown/HTML/JSON/plaintext, Jira, Azure
+  Boards, GitHub Issues and Linear.
+
+```python
+from aiqa import FailureClassifier, heal_locator, BugGenerationEngine, BugExporter
+
+FailureClassifier().classify(context)                 # category / owner / risk
+result.reasoning_detail.badge                         # "🟢 High"
+heal_locator("button.pay", dom_html).best.playwright  # healed locator
+BugExporter().export_all(BugGenerationEngine().build(result, context), "out/")
+```
+
+Or from the command line (`aiqa` console script, also `python -m aiqa`):
+
+```bash
+aiqa classify        context.json
+aiqa explain-failure context.json
+aiqa heal-locator    --old "button.pay" --dom page.html --text "Pay now"
+aiqa generate-bug    context.json --out ./bug
+```
+
+See [examples/phase1_intelligence_demo.py](examples/phase1_intelligence_demo.py)
+for a full runnable walkthrough and [API_REFERENCE.md](API_REFERENCE.md) for details.
+
 ## Visual Overview
 
 <table>

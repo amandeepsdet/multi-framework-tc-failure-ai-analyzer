@@ -28,10 +28,11 @@ from ..core.models import (
     RootCause,
     SimilarFailure,
 )
-from .heuristics import HeuristicClassifier, severity_for
+from .heuristics import HeuristicClassifier, risk_for, severity_for
 from .llm import OfflineProvider
 from .owners import owner_for
 from .rag import NullIndex
+from .reasoning import ConfidenceReasoningBuilder
 
 _SYSTEM_PROMPT = (
     "You are an expert QA reliability engineer. Perform precise, evidence-"
@@ -86,6 +87,15 @@ class FailureAnalyzer(Analyzer):
         result.similar_failures = similar
         if not result.owner:
             result.owner = owner_for(result.category, self.owner_overrides)
+        if not result.risk_level:
+            result.risk_level = risk_for(result.category).value
+        if result.reasoning_detail is None:
+            result.reasoning_detail = ConfidenceReasoningBuilder().build(
+                context,
+                category=result.category,
+                confidence=result.confidence.value,
+                similar=similar,
+            )
         if self.record_history:
             self._index(context, result)
         return result
@@ -129,6 +139,8 @@ class FailureAnalyzer(Analyzer):
                 summary=verdict.summary,
                 category=verdict.category,
                 detail=verdict.recommended_fix,
+                subcategory=verdict.subcategory,
+                reason=verdict.reason,
             ),
             confidence=ConfidenceScore(
                 value=verdict.confidence,
@@ -136,6 +148,7 @@ class FailureAnalyzer(Analyzer):
             ),
             severity=severity_for(verdict.category),
             owner=owner_for(verdict.category, self.owner_overrides),
+            risk_level=risk_for(verdict.category).value,
             evidence=facts,
             recommendations=[Recommendation(action=verdict.recommended_fix)],
             reasoning=(
