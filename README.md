@@ -439,7 +439,7 @@ A short summary is below; see [ROADMAP.md](ROADMAP.md) for the full plan.
 - ✅ Bug Generator
 - ✅ HTML Report
 - ✅ Run History Dashboard (Quality Portal)
-- ✅ CLI Chat
+- ✅ CLI Chat Bot
 
 **Planned**
 
