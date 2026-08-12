@@ -41,13 +41,18 @@ lives only in adapters and is lazy-imported.
 │   ├── adapters/               # the ONLY layer that knows a framework
 │   │   ├── playwright.py       #   PlaywrightAdapter + PlaywrightEventRecorder
 │   │   ├── selenium.py         #   SeleniumAdapter
-│   │   ├── robot.py            #   RobotFrameworkAdapter
+│   │   ├── robotframework.py   #   RobotFrameworkAdapter
 │   │   ├── pytest_adapter.py   #   PytestAdapter
 │   │   └── generic.py          #   GenericAdapter (dict | JSON str | path)
 │   ├── analysis/               # FailureAnalyzer: heuristics + optional LLM + RAG
-│   │   └── analyzer.py         #   analyze(context) -> AnalysisResult
+│   │   ├── analyzer.py         #   analyze(context) -> AnalysisResult
+│   │   ├── classifier.py       #   FailureClassifier (category · owner · risk)
+│   │   └── reasoning.py        #   ConfidenceReasoningBuilder (explainability)
+│   ├── healing/                # AI locator healing (LocatorHealingEngine, ranker)
 │   ├── reporting/              # reporters (md/json/html/console) + BugReportBuilder
+│   │   ├── bug/                #   BugGenerationEngine + BugExporter (Jira/Azure/GitHub/Linear)
 │   │   └── portal/             #   QualityPortal: multi-run history dashboard
+│   ├── cli.py                  # `aiqa` CLI (classify · explain-failure · heal-locator · generate-bug)
 │   └── config.py               # AiqaConfig (env-driven, all optional)
 ├── qa_ai_engine/               # backward-compatible pytest + Playwright plugin + assistant
 │   ├── assistant/              #   QA AI Assistant (CLI + chat + tools, MCP-ready)
@@ -78,6 +83,18 @@ from aiqa import (
 from aiqa.adapters import (
     PlaywrightAdapter, SeleniumAdapter, RobotFrameworkAdapter,
     PytestAdapter, GenericAdapter,
+)
+```
+
+The enterprise capabilities added in 3.2.0 are re-exported from the same
+top-level package:
+
+```python
+from aiqa import (
+    FailureClassifier, Classification, OwnerResolver, RiskLevel,
+    ConfidenceReasoning,
+    LocatorHealingEngine, LocatorRanker, HealingResult, LocatorSuggestion, heal_locator,
+    BugGenerationEngine, BugExporter,
 )
 ```
 

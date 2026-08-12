@@ -113,7 +113,7 @@ plain English.
 
 ```powershell
 python qa_ai.py analyze-last-failure
-python qa_ai.py explain tests/test_ai_demo.py::test_ai_failure_analysis_end_to_end
+python qa_ai.py explain-failure tests/test_ai_demo.py::test_ai_failure_analysis_end_to_end
 python qa_ai.py find-flaky-tests
 python qa_ai.py release-readiness
 python qa_ai.py generate-bug
@@ -174,8 +174,9 @@ multi-framework-tc-failure-ai-analyzer/
 ├── aiqa/               # the SDK: core domain, adapters, analysis engine, reporting
 │   ├── core/           #   pure, framework-agnostic models + interfaces
 │   ├── adapters/       #   Playwright, Selenium, Robot Framework, pytest, generic JSON
-│   ├── analysis/       #   FailureAnalyzer (offline heuristics + optional LLM) + RAG
-│   └── reporting/      #   reporters (md/json/html/console), bug builder, QualityPortal
+│   ├── analysis/       #   FailureAnalyzer + classifier + confidence reasoning (+ optional LLM/RAG)
+│   ├── healing/        #   AI locator healing (LocatorHealingEngine)
+│   └── reporting/      #   reporters (md/json/html/console), bug generator, QualityPortal
 ├── qa_ai_engine/       # backward-compatible pytest + Playwright plugin + assistant
 ├── prompts/            # external, editable AI prompt templates
 ├── examples/           # runnable examples (generic, pytest, Playwright, Selenium, JSON)
