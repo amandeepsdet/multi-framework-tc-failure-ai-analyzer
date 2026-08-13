@@ -2,7 +2,7 @@
 
 # AIQA — AI-powered Quality Engineering SDK
 
-**AI-powered Quality Engineering SDK for intelligent failure analysis, root cause detection, automated bug reporting, and developer-friendly quality insights.**
+**AI-powered Quality Engineering SDK for intelligent failure analysis, root cause detection, automated bug reporting, and developer-friendly quality insight.**
 
 <br />
 
