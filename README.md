@@ -185,6 +185,30 @@ aiqa generate-bug    context.json --out ./bug
 See [examples/phase1_intelligence_demo.py](examples/phase1_intelligence_demo.py)
 for a full runnable walkthrough and [API_REFERENCE.md](API_REFERENCE.md) for details.
 
+## GitHub Action (CI in one step)
+
+Analyze failures automatically in any workflow and publish the results to the
+**Job Summary**, a **Pull Request comment**, and an uploaded **artifact** —
+offline by default:
+
+```yaml
+- name: AI Failure Analysis
+  if: always()          # run even though the test step failed
+  uses: amandeepsdet/multi-framework-tc-failure-ai-analyzer/.github/actions/analyze-failures@v1
+  with:
+    report-path: reports/
+    framework: pytest
+    post-comment: true
+    upload-artifact: true
+```
+
+`if: always()` is required because a failing test step marks the job failed and
+skips later steps by default — `always()` forces the analysis to run *because*
+the tests failed, which is exactly when you want it. The action is
+orchestration only: it reuses the SDK pipeline (adapters → analysis →
+QualityPortal). See [docs/github-action.md](docs/github-action.md) for
+per-framework examples, inputs/outputs, permissions, and security.
+
 ## Visual Overview
 
 <table>

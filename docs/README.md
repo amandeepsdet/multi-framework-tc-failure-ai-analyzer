@@ -37,6 +37,12 @@ New here? Start with the [README](../README.md), then run the
 |-----|---------------|
 | [examples/README.md](../examples/README.md) | Index of every runnable example, by framework |
 
+## CI / Automation
+
+| Doc | What's inside |
+|-----|---------------|
+| [github-action.md](github-action.md) | The `analyze-failures` GitHub Action: setup, per-framework examples, inputs/outputs, PR comments, permissions, security |
+
 ## CLI & assistant
 
 | Doc | What's inside |

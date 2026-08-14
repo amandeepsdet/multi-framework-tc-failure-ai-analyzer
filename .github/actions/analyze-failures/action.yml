@@ -1,0 +1,121 @@
+name: "AIQA Failure Analysis"
+description: >-
+  Analyze failed test artifacts from any framework (pytest, Playwright, Selenium,
+  Robot Framework, or generic JSON/JUnit) with the AIQA SDK and publish the
+  results to the Job Summary, a Pull Request comment, and an uploaded artifact.
+  Runs fully offline by default — no API keys required.
+author: "Aman Deep"
+branding:
+  icon: "activity"
+  color: "blue"
+
+inputs:
+  report-path:
+    description: "Directory (or file) containing test artifacts to analyze."
+    required: false
+    default: "reports/"
+  framework:
+    description: "Framework hint: auto | pytest | playwright | selenium | robotframework | generic."
+    required: false
+    default: "auto"
+  output-path:
+    description: "Directory where the AIQA report + artifacts are written."
+    required: false
+    default: "aiqa-report/"
+  fail-on-error:
+    description: "If true, fail the step when failures are detected (quality gate). Default non-blocking."
+    required: false
+    default: "false"
+  post-comment:
+    description: "Create/update a single AI summary comment on the Pull Request."
+    required: false
+    default: "true"
+  upload-artifact:
+    description: "Upload the complete AIQA report (HTML/JSON/Markdown) as a build artifact."
+    required: false
+    default: "true"
+  artifact-name:
+    description: "Name of the uploaded artifact."
+    required: false
+    default: "aiqa-failure-analysis"
+  llm-provider:
+    description: "Optional LLM provider (none | openai). Offline heuristics are used when unset."
+    required: false
+    default: "none"
+  llm-api-key:
+    description: "API key for the LLM provider. Never logged. Leave empty for offline mode."
+    required: false
+    default: ""
+  analysis-mode:
+    description: "auto | offline | llm. 'offline' forces the zero-cost heuristic engine."
+    required: false
+    default: "auto"
+  github-token:
+    description: "Token used to post PR comments. Defaults to the workflow GITHUB_TOKEN."
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  report-path:
+    description: "Path to the generated AIQA report directory."
+    value: ${{ steps.analyze.outputs.report-path }}
+  report-url:
+    description: "URL of the workflow run hosting the analysis."
+    value: ${{ steps.analyze.outputs.report-url }}
+  artifact-name:
+    description: "Name of the uploaded artifact (empty when upload disabled)."
+    value: ${{ steps.analyze.outputs.artifact-name }}
+  failure-count:
+    description: "Number of analyzed failures."
+    value: ${{ steps.analyze.outputs.failure-count }}
+  failure-category:
+    description: "The most common failure category."
+    value: ${{ steps.analyze.outputs.failure-category }}
+  overall-status:
+    description: "Release readiness: READY | AT_RISK | NOT_READY."
+    value: ${{ steps.analyze.outputs.overall-status }}
+  quality-score:
+    description: "Quality score 0-100."
+    value: ${{ steps.analyze.outputs.quality-score }}
+
+runs:
+  using: "composite"
+  steps:
+    # Install the SDK only if it is not already importable (perf: no needless reinstall).
+    - name: Ensure AIQA SDK is installed
+      shell: bash
+      run: |
+        set -e
+        if python -c "import aiqa" 2>/dev/null; then
+          echo "aiqa already installed; skipping install."
+        else
+          echo "Installing aiqa from the action source..."
+          python -m pip install --disable-pip-version-check "${{ github.action_path }}/../../.."
+        fi
+
+    - name: Run AIQA analysis
+      id: analyze
+      shell: bash
+      env:
+        INPUT_REPORT_PATH: ${{ inputs.report-path }}
+        INPUT_FRAMEWORK: ${{ inputs.framework }}
+        INPUT_OUTPUT_PATH: ${{ inputs.output-path }}
+        INPUT_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+        INPUT_POST_COMMENT: ${{ inputs.post-comment }}
+        INPUT_UPLOAD_ARTIFACT: ${{ inputs.upload-artifact }}
+        INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
+        INPUT_LLM_PROVIDER: ${{ inputs.llm-provider }}
+        INPUT_LLM_API_KEY: ${{ inputs.llm-api-key }}
+        INPUT_ANALYSIS_MODE: ${{ inputs.analysis-mode }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        python "${{ github.action_path }}/scripts/run.py"
+
+    - name: Upload AIQA report artifact
+      if: ${{ inputs.upload-artifact == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.output-path }}
+        if-no-files-found: ignore
+        retention-days: 30

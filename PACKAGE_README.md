@@ -127,6 +127,21 @@ context = GenericAdapter().collect_failure_context("failure.json")   # dict | JS
 
 Runnable scripts live in [`examples/`](examples/).
 
+### CI / GitHub Action
+
+A reusable GitHub Action analyzes failures in any workflow and publishes the
+results to the Job Summary, a PR comment, and an artifact — offline by default:
+
+```yaml
+- name: AI Failure Analysis
+  if: always()
+  uses: amandeepsdet/multi-framework-tc-failure-ai-analyzer/.github/actions/analyze-failures@v1
+  with: { report-path: reports/, framework: pytest, post-comment: true }
+```
+
+It is orchestration only — it reuses the same adapters, engine, and
+`QualityPortal`. See [docs/github-action.md](docs/github-action.md).
+
 ---
 
 ## Core domain

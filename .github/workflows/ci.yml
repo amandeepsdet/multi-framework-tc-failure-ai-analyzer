@@ -43,4 +43,4 @@ jobs:
         continue-on-error: true
 
       - name: Run offline SDK + AI tests
-        run: pytest tests/aiqa tests/ai -m "sdk or ai" -o addopts="" -q
+        run: pytest tests/aiqa tests/ai tests/action -m "sdk or ai" -o addopts="" -q

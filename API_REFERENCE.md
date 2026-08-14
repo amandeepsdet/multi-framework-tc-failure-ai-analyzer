@@ -357,3 +357,11 @@ aiqa generate-bug    context.json --format jira      # or --out ./bug
 
 `context.json` is a serialized `FailureContext` (`FailureContext.to_json()`).
 Add `--json` to `classify`/`explain-failure`/`heal-locator` for machine output.
+
+### GitHub Action
+
+For CI, the `analyze-failures` GitHub Action orchestrates this same public API
+(adapters → `FailureAnalyzer` → `QualityPortal` → reporters) and publishes the
+result to the Job Summary, a PR comment, and an artifact. It is documented
+separately in [docs/github-action.md](docs/github-action.md) — it exposes no new
+Python API.

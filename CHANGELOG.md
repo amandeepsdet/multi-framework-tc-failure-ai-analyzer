@@ -4,6 +4,22 @@ All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and the
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [Unreleased]
+
+### Added
+- **GitHub Action** (`.github/actions/analyze-failures`) — a reusable, composite
+  action that analyzes failed test artifacts with the AIQA SDK and publishes the
+  results to the GitHub **Job Summary**, a **Pull Request comment** (create/update
+  by marker, never duplicated), and an uploaded **artifact**. Framework-agnostic
+  (pytest, Playwright, Selenium, Robot Framework, and generic JUnit/JSON), offline
+  by default, non-blocking by default, with an optional `fail-on-error` quality
+  gate. Orchestration only — it reuses the existing adapters, `FailureAnalyzer`,
+  `FailureClassifier`, `QualityPortal` (release readiness + knowledge base) and
+  reporters; it adds no analysis engine of its own. Inputs, outputs, PR-comment
+  behavior, permissions and security are documented in
+  [docs/github-action.md](docs/github-action.md). Includes local test scripts and
+  automated tests under `tests/action/`.
+
 ## [3.2.0] — 2026-08-09
 
 Enterprise AI capabilities. Purely additive and fully backward compatible — the

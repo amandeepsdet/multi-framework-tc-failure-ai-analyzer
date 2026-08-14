@@ -1,0 +1,52 @@
+# Example: run tests, then analyze any failures with the AIQA action.
+#
+# This example uses the repository-local action path (./.github/actions/...).
+# Consumers in other repositories use the published reference instead:
+#
+#   uses: amandeepsdet/multi-framework-tc-failure-ai-analyzer/.github/actions/analyze-failures@v1
+#
+name: Test + AI Analysis (example)
+
+on:
+  workflow_dispatch:
+  # pull_request:   # enable to get PR comments
+  # push:
+
+permissions:
+  contents: read
+  pull-requests: write   # required only for post-comment: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests (produce JUnit report)
+        run: pytest --junitxml=reports/junit.xml
+        continue-on-error: true   # let the analysis step run and surface the result
+
+      - name: AI Failure Analysis
+        if: always()              # run even when tests failed — that is the point
+        id: aiqa
+        uses: ./.github/actions/analyze-failures
+        with:
+          report-path: reports/
+          framework: pytest
+          post-comment: true
+          upload-artifact: true
+          fail-on-error: false    # non-blocking; set true to gate the build
+
+      - name: Show AIQA result
+        if: always()
+        run: |
+          echo "Status:   ${{ steps.aiqa.outputs.overall-status }}"
+          echo "Failures: ${{ steps.aiqa.outputs.failure-count }}"
+          echo "Quality:  ${{ steps.aiqa.outputs.quality-score }}"

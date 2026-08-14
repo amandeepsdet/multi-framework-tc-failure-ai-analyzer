@@ -15,6 +15,8 @@ like to help.
 - ✅ Quality Portal: run-history dashboard, quality score, release readiness,
   flaky detection, run comparison, failure clustering
 - ✅ CLI + chat assistant (`qa_ai.py`)
+- ✅ **GitHub Action** (`analyze-failures`) — CI orchestration that publishes
+  analysis to the Job Summary, PR comments, and artifacts (offline by default)
 
 ## In progress / next
 
@@ -22,6 +24,7 @@ like to help.
 - ⬜ More LLM providers as presets (Azure OpenAI, Anthropic, Gemini, Ollama)
 - ⬜ Richer RAG over historical failures (better recall + dedup)
 - ⬜ Cypress and Appium adapters shipped in-tree
+- ⬜ GitHub Action quality gates (`min-confidence`, `max-critical-failures`, `release-readiness`)
 
 ## Exploring
 

@@ -87,6 +87,16 @@ default and better when you add an LLM.
 - **Composition over inheritance** — the portal and engine are *composed* from
   small single-responsibility parts rather than deep class hierarchies.
 
+## Integration layers (not new engines)
+
+The **GitHub Action** (`.github/actions/analyze-failures`) is a deliberate
+application of the Facade/orchestration idea at the CI boundary. It discovers
+artifacts, builds a `FailureContext` via the existing adapters/builder, and
+drives the same `FailureAnalyzer` + `QualityPortal` + reporters — then publishes
+to the Job Summary, a PR comment, and an artifact. It holds **no** analysis or
+reporting logic of its own, so the core stays the single source of truth and the
+action can never drift from the SDK's behavior.
+
 ## What we deliberately avoid
 
 - Framework imports in the core (enforced by review; see
