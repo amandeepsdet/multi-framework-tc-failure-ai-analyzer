@@ -37,7 +37,9 @@ DEFAULT_OWNERS: dict[FailureCategory, str] = {
 }
 
 
-def owner_for(category: FailureCategory, overrides: dict[FailureCategory, str] | None = None) -> str:
+def owner_for(
+    category: FailureCategory, overrides: dict[FailureCategory, str] | None = None
+) -> str:
     table = {**DEFAULT_OWNERS, **(overrides or {})}
     return table.get(category, table[FailureCategory.UNKNOWN])
 
@@ -52,7 +54,7 @@ class OwnerResolver:
     def __init__(self, overrides: dict[FailureCategory, str] | None = None) -> None:
         self._overrides = dict(overrides or {})
 
-    def register(self, category: FailureCategory, owner: str) -> "OwnerResolver":
+    def register(self, category: FailureCategory, owner: str) -> OwnerResolver:
         self._overrides[category] = owner
         return self
 

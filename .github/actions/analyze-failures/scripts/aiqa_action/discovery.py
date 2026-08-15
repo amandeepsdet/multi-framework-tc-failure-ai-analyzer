@@ -72,9 +72,7 @@ def discover_failures(report_path: str | Path, framework: str = "auto") -> Disco
     generic_files = [
         f
         for f in files
-        if f.suffix.lower() == ".json"
-        and f not in pw_files
-        and _looks_like_failure_json(f)
+        if f.suffix.lower() == ".json" and f not in pw_files and _looks_like_failure_json(f)
     ]
 
     media = [f for f in files if f.suffix.lower() in _IMAGE_EXT]
@@ -276,9 +274,7 @@ def _parse_junit(
             )
 
 
-def _parse_robot(
-    path: Path, result: DiscoveryResult, media: list[Path], logs: list[Path]
-) -> None:
+def _parse_robot(path: Path, result: DiscoveryResult, media: list[Path], logs: list[Path]) -> None:
     try:
         root = ET.fromstring(_read_text(path))
     except ET.ParseError as exc:

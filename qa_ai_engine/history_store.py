@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 from .models import AnalysisResult, FailureRecord
 
@@ -35,7 +35,7 @@ class HistoryStore:
     # ------------------------------------------------------------------ write
     def save(self, record: FailureRecord, analysis: AnalysisResult | None = None) -> Path:
         """Persist a failure (and optional analysis) and return the file path."""
-        stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
+        stamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S_%f")
         safe_name = _SAFE.sub("_", record.test_name or "unknown").strip("_")[:80]
         record.record_id = record.record_id or f"{stamp}_{safe_name}"
         path = self.dir / f"{record.record_id}.json"
@@ -84,7 +84,9 @@ class HistoryStore:
 
     def by_test(self, test_name: str) -> list[dict[str, Any]]:
         needle = test_name.lower()
-        return self.query(lambda item: needle in (item.get("record", {}).get("test_name", "").lower()))
+        return self.query(
+            lambda item: needle in (item.get("record", {}).get("test_name", "").lower())
+        )
 
     def count(self) -> int:
         return len(list(self._iter_files()))

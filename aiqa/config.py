@@ -22,7 +22,9 @@ class AiqaConfig:
 
     provider: str = field(default_factory=lambda: os.getenv("AIQA_PROVIDER", "offline"))
     model: str = field(default_factory=lambda: os.getenv("AIQA_MODEL", "gpt-4o-mini"))
-    api_key: str | None = field(default_factory=lambda: os.getenv("AIQA_API_KEY") or os.getenv("OPENAI_API_KEY"))
+    api_key: str | None = field(
+        default_factory=lambda: os.getenv("AIQA_API_KEY") or os.getenv("OPENAI_API_KEY")
+    )
     base_url: str | None = field(default_factory=lambda: os.getenv("AIQA_BASE_URL"))
     base_dir: Path = field(default_factory=lambda: Path(os.getenv("AIQA_BASE_DIR", ".aiqa")))
     enable_history: bool = field(default_factory=lambda: _flag("AIQA_ENABLE_HISTORY", False))

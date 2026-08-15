@@ -13,15 +13,40 @@ python -m venv .venv
 # Windows: .\.venv\Scripts\Activate.ps1
 # Unix:    source .venv/bin/activate
 
+# Install the package with the full developer toolchain (test, lint, format,
+# type-check, coverage, build). This is all a contributor needs.
+pip install -e ".[dev]"
+
+# Optional: runtime deps for the shared demo conftest (Playwright/requests/…).
 pip install -r requirements.txt
+
+# Optional but recommended: install the git hooks.
+pre-commit install
 ```
 
 ## Running tests
 
-The SDK tests run fully offline (no browser, no secrets):
+The SDK, AI, and GitHub Action tests run fully offline (no browser, no secrets):
 
 ```bash
-pytest tests/aiqa tests/ai -m "sdk or ai" -o addopts=""
+pytest tests/aiqa tests/ai tests/action -m "sdk or ai or action" -o addopts=""
+```
+
+Measure coverage (informational — no enforced threshold yet):
+
+```bash
+pytest --cov=aiqa --cov=qa_ai_engine --cov-report=term-missing
+```
+
+## Developer checks
+
+All tooling is configured centrally in `pyproject.toml`. Run before submitting:
+
+```bash
+ruff check .        # lint (blocking in CI)
+black --check .     # format check (blocking in CI)
+mypy aiqa           # type check
+pytest              # tests
 ```
 
 ## Architecture rules (please preserve)
@@ -40,7 +65,11 @@ contributing:
 
 ## Style
 
-- Format with **black** and lint with **ruff** before submitting.
+- Format with **black** and lint with **ruff** before submitting (both are
+  blocking in CI). Configuration lives in `pyproject.toml`; run `pre-commit
+  install` to apply them automatically on commit.
+- The package ships **PEP 561** typing metadata (`py.typed`); keep public
+  functions typed and `mypy aiqa` clean.
 - Add or update tests for any behavior change.
 - Use clear, descriptive commit messages.
 

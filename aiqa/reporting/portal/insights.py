@@ -7,7 +7,7 @@ the analysis results that already exist.
 
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 from .comparison import RunComparison
 from .models import ExecutionRun
@@ -25,15 +25,12 @@ class ExecutiveSummaryGenerator:
             )
         else:
             parts.append(
-                f"{run.failed} of {run.total} test(s) failed "
-                f"(pass rate {run.pass_rate:.0f}%)."
+                f"{run.failed} of {run.total} test(s) failed " f"(pass rate {run.pass_rate:.0f}%)."
             )
             top_cat = next(iter(run.categories), None)
             if top_cat:
                 n = run.categories[top_cat]
-                parts.append(
-                    f"The dominant failure category is {top_cat} ({n} failure(s))."
-                )
+                parts.append(f"The dominant failure category is {top_cat} ({n} failure(s)).")
             if run.critical_count:
                 parts.append(f"{run.critical_count} failure(s) are critical or blocking.")
             if run.security_count:
@@ -49,12 +46,18 @@ class ExecutiveSummaryGenerator:
 
         if comparison and comparison.previous_run_id:
             if comparison.new_failures:
-                parts.append(f"{len(comparison.new_failures)} new failure(s) versus the previous run.")
+                parts.append(
+                    f"{len(comparison.new_failures)} new failure(s) versus the previous run."
+                )
             if comparison.resolved_failures:
-                parts.append(f"{len(comparison.resolved_failures)} previously failing test(s) now pass.")
+                parts.append(
+                    f"{len(comparison.resolved_failures)} previously failing test(s) now pass."
+                )
             if comparison.pass_rate_change:
                 direction = "up" if comparison.pass_rate_change > 0 else "down"
-                parts.append(f"Pass rate is {direction} {abs(comparison.pass_rate_change):.0f} points.")
+                parts.append(
+                    f"Pass rate is {direction} {abs(comparison.pass_rate_change):.0f} points."
+                )
 
         parts.append(f"Release readiness: {run.release_readiness}.")
         return " ".join(parts)

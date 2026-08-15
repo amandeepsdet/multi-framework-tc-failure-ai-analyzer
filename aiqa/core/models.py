@@ -15,14 +15,14 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from .enums import FailureCategory, Severity
 
 
 def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 # --------------------------------------------------------------------------- #
@@ -104,20 +104,20 @@ class Evidence:
             "console": [c.to_dict() for c in self.console],
             "network": [n.to_dict() for n in self.network],
             "api_responses": list(self.api_responses),
-            "logs": [l.to_dict() for l in self.logs],
+            "logs": [entry.to_dict() for entry in self.logs],
             "artifacts": dict(self.artifacts),
             "custom": dict(self.custom),
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Evidence":
+    def from_dict(cls, data: dict[str, Any]) -> Evidence:
         return cls(
             screenshot=data.get("screenshot"),
             dom_snapshot=data.get("dom_snapshot", ""),
             console=[_console_from(c) for c in (data.get("console") or [])],
             network=[_network_from(n) for n in (data.get("network") or [])],
             api_responses=list(data.get("api_responses") or []),
-            logs=[_log_from(l) for l in (data.get("logs") or [])],
+            logs=[_log_from(entry) for entry in (data.get("logs") or [])],
             artifacts=dict(data.get("artifacts") or {}),
             custom=dict(data.get("custom") or {}),
         )
@@ -148,8 +148,9 @@ def _console_from(data: Any) -> ConsoleMessage:
     if isinstance(data, ConsoleMessage):
         return data
     if isinstance(data, dict):
-        return ConsoleMessage(level=data.get("level") or data.get("type") or "log",
-                              text=data.get("text", ""))
+        return ConsoleMessage(
+            level=data.get("level") or data.get("type") or "log", text=data.get("text", "")
+        )
     return ConsoleMessage(text=str(data))
 
 
@@ -191,7 +192,7 @@ class ExecutionContext:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ExecutionContext":
+    def from_dict(cls, data: dict[str, Any]) -> ExecutionContext:
         known = {k: data[k] for k in cls.__dataclass_fields__ if k in data}
         return cls(**known)
 
@@ -214,7 +215,7 @@ class FailureMetadata:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "FailureMetadata":
+    def from_dict(cls, data: dict[str, Any]) -> FailureMetadata:
         known = {k: data[k] for k in cls.__dataclass_fields__ if k in data}
         return cls(**known)
 
@@ -265,20 +266,23 @@ class FailureContext:
         return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "FailureContext":
+    def from_dict(cls, data: dict[str, Any]) -> FailureContext:
         return cls(
             metadata=FailureMetadata.from_dict(data.get("metadata", {}) or {}),
-            exception=ExceptionInfo(**{
-                k: v for k, v in (data.get("exception", {}) or {}).items()
-                if k in ExceptionInfo.__dataclass_fields__
-            }),
+            exception=ExceptionInfo(
+                **{
+                    k: v
+                    for k, v in (data.get("exception", {}) or {}).items()
+                    if k in ExceptionInfo.__dataclass_fields__
+                }
+            ),
             evidence=Evidence.from_dict(data.get("evidence", {}) or {}),
             execution=ExecutionContext.from_dict(data.get("execution", {}) or {}),
             assertion_message=data.get("assertion_message", ""),
         )
 
     @classmethod
-    def from_json(cls, text: str) -> "FailureContext":
+    def from_json(cls, text: str) -> FailureContext:
         return cls.from_dict(json.loads(text))
 
 
@@ -343,7 +347,7 @@ class ConfidenceReasoning:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ConfidenceReasoning":
+    def from_dict(cls, data: dict[str, Any]) -> ConfidenceReasoning:
         return cls(
             confidence=int(data.get("confidence", 0) or 0),
             reasoning_points=list(data.get("reasoning_points") or []),
@@ -412,7 +416,7 @@ class AnalysisResult:
     reasoning: str = ""
     source: str = "heuristic"  # "heuristic" | provider name
     risk_level: str = ""
-    reasoning_detail: "ConfidenceReasoning | None" = None
+    reasoning_detail: ConfidenceReasoning | None = None
 
     # -- convenience accessors --------------------------------------------- #
     @property
@@ -438,15 +442,21 @@ class AnalysisResult:
         return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "AnalysisResult":
+    def from_dict(cls, data: dict[str, Any]) -> AnalysisResult:
         rc = data.get("root_cause", {}) or {}
         conf = data.get("confidence", {}) or {}
         if isinstance(conf, (int, float)):
             conf = {"value": int(conf)}
         return cls(
             root_cause=RootCause(
-                summary=rc.get("summary", data.get("root_cause_summary", "")) if isinstance(rc, dict) else str(rc),
-                category=FailureCategory.coerce(rc.get("category") if isinstance(rc, dict) else data.get("category")),
+                summary=(
+                    rc.get("summary", data.get("root_cause_summary", ""))
+                    if isinstance(rc, dict)
+                    else str(rc)
+                ),
+                category=FailureCategory.coerce(
+                    rc.get("category") if isinstance(rc, dict) else data.get("category")
+                ),
                 detail=rc.get("detail", "") if isinstance(rc, dict) else "",
                 subcategory=rc.get("subcategory", "") if isinstance(rc, dict) else "",
                 reason=rc.get("reason", "") if isinstance(rc, dict) else "",
@@ -459,14 +469,25 @@ class AnalysisResult:
             owner=data.get("owner", ""),
             evidence=list(data.get("evidence", []) or []),
             recommendations=[
-                r if isinstance(r, Recommendation)
-                else Recommendation(action=r.get("action", ""), rationale=r.get("rationale", ""))
-                if isinstance(r, dict) else Recommendation(action=str(r))
+                (
+                    r
+                    if isinstance(r, Recommendation)
+                    else (
+                        Recommendation(action=r.get("action", ""), rationale=r.get("rationale", ""))
+                        if isinstance(r, dict)
+                        else Recommendation(action=str(r))
+                    )
+                )
                 for r in (data.get("recommendations", []) or [])
             ],
             similar_failures=[
-                s if isinstance(s, SimilarFailure)
-                else SimilarFailure(**{k: v for k, v in s.items() if k in SimilarFailure.__dataclass_fields__})
+                (
+                    s
+                    if isinstance(s, SimilarFailure)
+                    else SimilarFailure(
+                        **{k: v for k, v in s.items() if k in SimilarFailure.__dataclass_fields__}
+                    )
+                )
                 for s in (data.get("similar_failures", []) or [])
                 if isinstance(s, (dict, SimilarFailure))
             ],
@@ -475,7 +496,8 @@ class AnalysisResult:
             risk_level=data.get("risk_level", ""),
             reasoning_detail=(
                 ConfidenceReasoning.from_dict(data["reasoning_detail"])
-                if isinstance(data.get("reasoning_detail"), dict) else None
+                if isinstance(data.get("reasoning_detail"), dict)
+                else None
             ),
         )
 

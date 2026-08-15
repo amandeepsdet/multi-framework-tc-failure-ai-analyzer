@@ -45,7 +45,9 @@ class PlaywrightEventRecorder:
     def _on_response(self, response: Any) -> None:
         try:
             self.network.append(
-                NetworkEvent(method=response.request.method, url=response.url, status=response.status)
+                NetworkEvent(
+                    method=response.request.method, url=response.url, status=response.status
+                )
             )
         except Exception:
             pass
@@ -53,8 +55,11 @@ class PlaywrightEventRecorder:
     def _on_request_failed(self, request: Any) -> None:
         try:
             self.network.append(
-                NetworkEvent(method=request.method, url=request.url,
-                             response_body=str(getattr(request, "failure", "")))
+                NetworkEvent(
+                    method=request.method,
+                    url=request.url,
+                    response_body=str(getattr(request, "failure", "")),
+                )
             )
         except Exception:
             pass
@@ -65,8 +70,13 @@ class PlaywrightAdapter(FrameworkAdapter):
 
     name = "playwright"
 
-    def __init__(self, page: Any = None, recorder: PlaywrightEventRecorder | None = None,
-                 *, dom_max_chars: int = 20000) -> None:
+    def __init__(
+        self,
+        page: Any = None,
+        recorder: PlaywrightEventRecorder | None = None,
+        *,
+        dom_max_chars: int = 20000,
+    ) -> None:
         self.page = page
         self.recorder = recorder
         self.dom_max_chars = dom_max_chars

@@ -19,7 +19,6 @@ from aiqa import (
     FailureContext,
     QualityPortal,
     heal_locator,
-    render,
 )
 from aiqa.core.enums import FailureCategory
 from aiqa.reporting.portal.models import ExecutionRun, RunFailure

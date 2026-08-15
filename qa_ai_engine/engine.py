@@ -13,12 +13,11 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 from .bug_report_generator import BugReportGenerator
 from .evidence_collector import EvidenceCollector, PageEventRecorder
@@ -31,6 +30,7 @@ from .prompt_builder import PromptBuilder
 from .report_generator import ExecutionReportBuilder, ReportGenerator, get_execution_builder
 from .trend_analyzer import ReleaseReadiness, TrendAnalyzer, TrendReport
 from .visual_analyzer import VisualAnalyzer, VisualFindings
+
 logger = get_logger("ai.engine")
 
 _SAFE = re.compile(r"[^A-Za-z0-9_.-]+")
@@ -148,7 +148,7 @@ class AIEngine:
 
     @staticmethod
     def _stem(record: FailureRecord) -> str:
-        stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        stamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         safe = _SAFE.sub("_", record.test_name or "unknown").strip("_")[:60]
         return f"{stamp}_{safe}"
 
@@ -171,8 +171,10 @@ class AIEngine:
         except Exception:  # noqa: BLE001
             bug_md = ""
         self.report_builder.add_failure(
-            outcome.record, outcome.analysis,
-            nodeid=nodeid or outcome.record.test_name, bug_markdown=bug_md,
+            outcome.record,
+            outcome.analysis,
+            nodeid=nodeid or outcome.record.test_name,
+            bug_markdown=bug_md,
         )
 
     def append_success(self, nodeid: str) -> None:

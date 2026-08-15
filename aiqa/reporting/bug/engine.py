@@ -153,7 +153,7 @@ class BugGenerationEngine:
     def _logs(context: FailureContext | None) -> list[str]:
         if context is None:
             return []
-        return [f"{l.level.upper()}: {l.message}" for l in context.evidence.logs][:20]
+        return [f"{entry.level.upper()}: {entry.message}" for entry in context.evidence.logs][:20]
 
     @staticmethod
     def _network(context: FailureContext | None) -> list[str]:
@@ -173,7 +173,8 @@ class BugGenerationEngine:
         if context.evidence.screenshot:
             shots.append(context.evidence.screenshot)
         shots.extend(
-            path for name, path in context.evidence.artifacts.items()
+            path
+            for name, path in context.evidence.artifacts.items()
             if "screenshot" in name.lower() or path.lower().endswith((".png", ".jpg", ".jpeg"))
         )
         return shots

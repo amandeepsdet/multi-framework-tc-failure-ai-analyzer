@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from ..core.models import FailureContext
 from .base import FrameworkAdapter, git_commit
@@ -40,10 +40,10 @@ class GenericAdapter(FrameworkAdapter):
         if isinstance(payload, dict):
             return payload
         if isinstance(payload, Path):
-            return json.loads(payload.read_text(encoding="utf-8"))
+            return cast("dict[str, Any]", json.loads(payload.read_text(encoding="utf-8")))
         if isinstance(payload, str):
             candidate = Path(payload)
             if candidate.exists():
-                return json.loads(candidate.read_text(encoding="utf-8"))
-            return json.loads(payload)
+                return cast("dict[str, Any]", json.loads(candidate.read_text(encoding="utf-8")))
+            return cast("dict[str, Any]", json.loads(payload))
         raise TypeError(f"Unsupported payload type: {type(payload)!r}")

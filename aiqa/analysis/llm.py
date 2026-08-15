@@ -55,6 +55,7 @@ class OpenAIProvider:
             return False
         try:  # lazy: only import when a key is present
             import openai  # noqa: F401
+
             return True
         except Exception:
             return False
@@ -87,12 +88,14 @@ class OpenAIProvider:
 def _loads_lenient(text: str) -> dict[str, Any]:
     """Parse JSON, tolerating code fences or surrounding prose."""
     try:
-        return json.loads(text)
+        parsed = json.loads(text)
+        return parsed if isinstance(parsed, dict) else {}
     except Exception:
         match = re.search(r"\{.*\}", text, re.S)
         if match:
             try:
-                return json.loads(match.group(0))
+                parsed = json.loads(match.group(0))
+                return parsed if isinstance(parsed, dict) else {}
             except Exception:
                 pass
     return {}

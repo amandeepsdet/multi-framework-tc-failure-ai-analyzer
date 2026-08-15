@@ -65,7 +65,7 @@ class KnowledgeEntry:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "KnowledgeEntry":
+    def from_dict(cls, data: dict[str, Any]) -> KnowledgeEntry:
         known = {k: data[k] for k in cls.__dataclass_fields__ if k in data}
         return cls(**known)
 

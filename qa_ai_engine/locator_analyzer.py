@@ -14,7 +14,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 from .llm_client import BaseLLMClient, get_llm_client
 from .prompt_builder import PromptBuilder

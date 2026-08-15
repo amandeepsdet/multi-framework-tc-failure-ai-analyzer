@@ -7,8 +7,8 @@ import json
 import pytest
 
 from aiqa import FailureAnalyzer, FailureContextBuilder, available_formats, get_reporter
-from aiqa.reporting import BugReportBuilder, register_reporter
 from aiqa.core.interfaces import Reporter
+from aiqa.reporting import BugReportBuilder, register_reporter
 
 pytestmark = pytest.mark.sdk
 

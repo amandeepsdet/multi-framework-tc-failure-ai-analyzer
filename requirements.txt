@@ -1,4 +1,16 @@
-# Core automation stack
+# =====================================================================
+# NOTE: This file is for LOCAL DEVELOPMENT / running the bundled demo and
+# example suites — it is NOT the published package's dependency list.
+#
+# The installed SDK's runtime dependencies are declared in pyproject.toml:
+#   * Core install  -> `pytest` only (fully offline).
+#   * Optional extras (opt-in): [playwright], [reports], [openai], [llm],
+#     [vector], [all], and [dev] (contributor toolchain).
+# Install the published package with:  pip install multi-framework-tc-failure-ai-analyzer
+# Install for development with:         pip install -e ".[dev]"
+# =====================================================================
+
+# Core automation stack (for the demo/example test suites)
 playwright>=1.40
 pytest>=8.0
 pytest-playwright>=0.5

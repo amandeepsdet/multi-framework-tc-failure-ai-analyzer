@@ -16,9 +16,8 @@ import os
 from pathlib import Path
 from typing import Any
 
-from qa_ai_engine._logging import get_logger
-
 from qa_ai_engine import AIEngine, FailureRecord
+from qa_ai_engine._logging import get_logger
 
 from .tool_registry import ToolRegistry
 
@@ -77,7 +76,9 @@ class QAAssistant:
         if not latest:
             return {"message": "No failures found in history. Run the test suite first."}
         record = FailureRecord.from_dict(latest.get("record", {}))
-        outcome = self.engine.analyze_record(record, framework_context=_FRAMEWORK_CONTEXT, persist=False)
+        outcome = self.engine.analyze_record(
+            record, framework_context=_FRAMEWORK_CONTEXT, persist=False
+        )
         return {
             "test": record.test_name,
             "analysis": outcome.analysis.to_dict(),
@@ -96,9 +97,12 @@ class QAAssistant:
             }
         latest = matches[0]
         record = FailureRecord.from_dict(latest.get("record", {}))
-        analysis = latest.get("analysis") or self.engine.analyze_record(
-            record, framework_context=_FRAMEWORK_CONTEXT, persist=False
-        ).analysis.to_dict()
+        analysis = (
+            latest.get("analysis")
+            or self.engine.analyze_record(
+                record, framework_context=_FRAMEWORK_CONTEXT, persist=False
+            ).analysis.to_dict()
+        )
         return {"test": record.test_name, "analysis": analysis}
 
     def summarize_run(self) -> dict[str, Any]:
@@ -118,7 +122,9 @@ class QAAssistant:
         if not matches:
             return {"message": "No failure available to generate a bug report from."}
         record = FailureRecord.from_dict(matches[0].get("record", {}))
-        outcome = self.engine.analyze_record(record, framework_context=_FRAMEWORK_CONTEXT, persist=False)
+        outcome = self.engine.analyze_record(
+            record, framework_context=_FRAMEWORK_CONTEXT, persist=False
+        )
         markdown = self.engine.bug_gen.to_markdown(outcome.bug_report)
         return {"bug_report": outcome.bug_report.to_dict(), "markdown": markdown}
 
@@ -176,15 +182,21 @@ class QAAssistant:
     def explain_stacktrace(self, stacktrace: str) -> dict[str, Any]:
         record = FailureRecord(test_name="ad-hoc", failure=stacktrace)
         record.evidence.stacktrace = stacktrace
-        record.evidence.assertion_message = stacktrace.strip().splitlines()[-1] if stacktrace.strip() else ""
-        outcome = self.engine.analyze_record(record, framework_context=_FRAMEWORK_CONTEXT, persist=False)
+        record.evidence.assertion_message = (
+            stacktrace.strip().splitlines()[-1] if stacktrace.strip() else ""
+        )
+        outcome = self.engine.analyze_record(
+            record, framework_context=_FRAMEWORK_CONTEXT, persist=False
+        )
         return {"analysis": outcome.analysis.to_dict()}
 
     def explain_api_response(self, response_text: str) -> dict[str, Any]:
         record = FailureRecord(test_name="api-response", failure=response_text)
         record.evidence.api_responses = [{"body": response_text}]
         record.evidence.assertion_message = response_text[:300]
-        outcome = self.engine.analyze_record(record, framework_context=_FRAMEWORK_CONTEXT, persist=False)
+        outcome = self.engine.analyze_record(
+            record, framework_context=_FRAMEWORK_CONTEXT, persist=False
+        )
         return {"analysis": outcome.analysis.to_dict()}
 
     def analyze_report(self, report_path: str) -> dict[str, Any]:
@@ -204,25 +216,69 @@ class QAAssistant:
     # ------------------------------------------------------------- registry
     def _register_tools(self) -> None:
         r = self.registry
-        r.register_fn("AnalyzeFailureTool", lambda **k: self.analyze_last_failure(),
-                      "Analyze the most recent test failure.", ["Why did the last test fail?"])
-        r.register_fn("ExplainFailureTool", lambda test_id, **k: self.explain_failure(test_id),
-                      "Explain why a specific test failed.", ["Explain why checkout::test_pay failed"])
-        r.register_fn("SearchHistoryTool", lambda query, **k: self.search(query),
-                      "Semantic search across failure history.", ["Show timeout failures"])
-        r.register_fn("GenerateBugTool", lambda test_id=None, **k: self.generate_bug(test_id),
-                      "Generate a bug report from a failure.", ["Generate a bug for the last failure"])
-        r.register_fn("SummarizeRunTool", lambda **k: self.summarize_run(),
-                      "Summarize the latest run.", ["Summarize the last run"])
-        r.register_fn("CompareRunsTool", lambda **k: self.compare_runs(),
-                      "Compare recent failures against older history.", ["Compare the last two runs"])
-        r.register_fn("QualitySummaryTool", lambda **k: self.quality_summary(),
-                      "Compact quality overview (trend + readiness).", ["Give me a quality summary"])
-        r.register_fn("ExplainStacktraceTool", lambda stacktrace, **k: self.explain_stacktrace(stacktrace),
-                      "Explain a stacktrace.", ["Explain this stacktrace"])
-        r.register_fn("ExplainAPIResponseTool", lambda response_text, **k: self.explain_api_response(response_text),
-                      "Explain an API response.", ["Explain this API response"])
-        r.register_fn("ReleaseReadinessTool", lambda **k: self.release_readiness(),
-                      "Compute release-readiness score.", ["Are we ready to release?"])
-        r.register_fn("TrendAnalysisTool", lambda **k: self.trend_analysis(),
-                      "Aggregate quality trend analysis.", ["Which tests fail most often?"])
+        r.register_fn(
+            "AnalyzeFailureTool",
+            lambda **k: self.analyze_last_failure(),
+            "Analyze the most recent test failure.",
+            ["Why did the last test fail?"],
+        )
+        r.register_fn(
+            "ExplainFailureTool",
+            lambda test_id, **k: self.explain_failure(test_id),
+            "Explain why a specific test failed.",
+            ["Explain why checkout::test_pay failed"],
+        )
+        r.register_fn(
+            "SearchHistoryTool",
+            lambda query, **k: self.search(query),
+            "Semantic search across failure history.",
+            ["Show timeout failures"],
+        )
+        r.register_fn(
+            "GenerateBugTool",
+            lambda test_id=None, **k: self.generate_bug(test_id),
+            "Generate a bug report from a failure.",
+            ["Generate a bug for the last failure"],
+        )
+        r.register_fn(
+            "SummarizeRunTool",
+            lambda **k: self.summarize_run(),
+            "Summarize the latest run.",
+            ["Summarize the last run"],
+        )
+        r.register_fn(
+            "CompareRunsTool",
+            lambda **k: self.compare_runs(),
+            "Compare recent failures against older history.",
+            ["Compare the last two runs"],
+        )
+        r.register_fn(
+            "QualitySummaryTool",
+            lambda **k: self.quality_summary(),
+            "Compact quality overview (trend + readiness).",
+            ["Give me a quality summary"],
+        )
+        r.register_fn(
+            "ExplainStacktraceTool",
+            lambda stacktrace, **k: self.explain_stacktrace(stacktrace),
+            "Explain a stacktrace.",
+            ["Explain this stacktrace"],
+        )
+        r.register_fn(
+            "ExplainAPIResponseTool",
+            lambda response_text, **k: self.explain_api_response(response_text),
+            "Explain an API response.",
+            ["Explain this API response"],
+        )
+        r.register_fn(
+            "ReleaseReadinessTool",
+            lambda **k: self.release_readiness(),
+            "Compute release-readiness score.",
+            ["Are we ready to release?"],
+        )
+        r.register_fn(
+            "TrendAnalysisTool",
+            lambda **k: self.trend_analysis(),
+            "Aggregate quality trend analysis.",
+            ["Which tests fail most often?"],
+        )

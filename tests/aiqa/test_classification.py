@@ -4,8 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from aiqa import Classification, FailureCategory, FailureClassifier, OwnerResolver
-from aiqa import FailureContextBuilder, RiskLevel
+from aiqa import (
+    Classification,
+    FailureCategory,
+    FailureClassifier,
+    FailureContextBuilder,
+    OwnerResolver,
+    RiskLevel,
+)
 
 pytestmark = pytest.mark.sdk
 

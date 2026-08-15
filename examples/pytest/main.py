@@ -43,6 +43,6 @@ def analyze_from_exception(exc: BaseException, test_name: str) -> None:
 
 if __name__ == "__main__":
     try:
-        assert False, "expected 200 but server returned HTTP 401 Unauthorized"
+        raise AssertionError("expected 200 but server returned HTTP 401 Unauthorized")
     except AssertionError as exc:
         analyze_from_exception(exc, test_name="auth::test_login")

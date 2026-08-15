@@ -16,10 +16,10 @@ from typing import Any
 class LocatorSuggestion:
     """A single proposed replacement locator, in multiple framework syntaxes."""
 
-    strategy: str = ""          # e.g. "data-testid", "id", "role", "text", "css", "xpath"
-    confidence: int = 0         # 0-100
+    strategy: str = ""  # e.g. "data-testid", "id", "role", "text", "css", "xpath"
+    confidence: int = 0  # 0-100
     reason: str = ""
-    quality: str = "Weak"       # "Best" | "Good" | "Weak" (set by the ranker)
+    quality: str = "Weak"  # "Best" | "Good" | "Weak" (set by the ranker)
     playwright: str = ""
     selenium: str = ""
     css: str = ""

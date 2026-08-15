@@ -11,8 +11,9 @@ import json
 import os
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from .render import COMMENT_MARKER
 
@@ -43,7 +44,9 @@ def write_step_summary(markdown: str, path: str | None = None) -> None:
         fh.write(markdown.rstrip() + "\n")
 
 
-def find_existing_comment(comments: list[dict[str, Any]], marker: str = COMMENT_MARKER) -> int | None:
+def find_existing_comment(
+    comments: list[dict[str, Any]], marker: str = COMMENT_MARKER
+) -> int | None:
     """Return the id of the first comment containing ``marker``, else None."""
     for c in comments or []:
         if marker in (c.get("body") or ""):
@@ -52,7 +55,9 @@ def find_existing_comment(comments: list[dict[str, Any]], marker: str = COMMENT_
 
 
 def _default_http() -> HttpFn:
-    def _http(method: str, url: str, headers: dict[str, str], body: bytes | None) -> tuple[int, Any]:
+    def _http(
+        method: str, url: str, headers: dict[str, str], body: bytes | None
+    ) -> tuple[int, Any]:
         req = urllib.request.Request(url, data=body, headers=headers, method=method)
         try:
             with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310 (github api only)

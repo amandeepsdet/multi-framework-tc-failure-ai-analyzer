@@ -6,8 +6,9 @@ distributions. Pure computation; the dashboard layer decides how to draw it.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Any
 
 from .models import ExecutionRun
 

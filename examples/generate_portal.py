@@ -58,10 +58,12 @@ def main() -> None:
         for i in range(total_tests - len(scenario)):
             portal.add_success(f"suite::passing_{i}")
         run = portal.finish_run()
-        print(f"Recorded {run.run_id}: "
-              f"{run.failed} failed / {run.total} total, "
-              f"quality {run.quality_score} ({run.quality_band}), "
-              f"health {run.build_health}, readiness {run.release_readiness}")
+        print(
+            f"Recorded {run.run_id}: "
+            f"{run.failed} failed / {run.total} total, "
+            f"quality {run.quality_score} ({run.quality_band}), "
+            f"health {run.build_health}, readiness {run.release_readiness}"
+        )
 
     print("\nPortal generated -> reports/index.html")
 

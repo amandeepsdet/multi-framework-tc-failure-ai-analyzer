@@ -8,8 +8,8 @@ a deliberately conservative signal that still catches classic flakiness.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from .models import ExecutionRun
 
@@ -45,7 +45,7 @@ class FlakyDetector:
             # Trim leading not-failing entries before the first observed failure.
             first = seq.index(True)
             trimmed = seq[first:]
-            transitions = sum(1 for a, b in zip(trimmed, trimmed[1:]) if a != b)
+            transitions = sum(1 for a, b in zip(trimmed, trimmed[1:], strict=False) if a != b)
             fail_runs = sum(1 for x in trimmed if x)
             win = len(trimmed)
             is_flaky = transitions >= 2 and 0 < fail_runs < win

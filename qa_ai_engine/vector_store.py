@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Any
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 from .embeddings import BaseEmbedder, cosine_similarity, get_embedder
 
@@ -34,7 +33,12 @@ class VectorHit:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return {"id": self.id, "score": round(self.score, 4), "text": self.text, "metadata": self.metadata}
+        return {
+            "id": self.id,
+            "score": round(self.score, 4),
+            "text": self.text,
+            "metadata": self.metadata,
+        }
 
 
 class BaseVectorStore(ABC):
@@ -148,7 +152,9 @@ class ChromaVectorStore(BaseVectorStore):  # pragma: no cover - optional depende
         return self._collection.count()
 
 
-def get_vector_store(cfg: AIConfig = ai_config, embedder: BaseEmbedder | None = None) -> BaseVectorStore:
+def get_vector_store(
+    cfg: AIConfig = ai_config, embedder: BaseEmbedder | None = None
+) -> BaseVectorStore:
     """Factory: build the configured vector store, defaulting to JSON."""
     embedder = embedder or get_embedder(cfg)
     backend = (cfg.vector_backend or "json").lower()

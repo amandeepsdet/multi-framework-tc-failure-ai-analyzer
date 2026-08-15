@@ -50,7 +50,7 @@ class FailureContextBuilder:
         execution_time_s: float | None = None,
         git_commit: str = "",
         retries: int = 0,
-    ) -> "FailureContextBuilder":
+    ) -> FailureContextBuilder:
         self._metadata = FailureMetadata(
             test_id=test_id or name,
             test_name=name,
@@ -65,50 +65,49 @@ class FailureContextBuilder:
         return self
 
     # -- failure signal ----------------------------------------------------- #
-    def with_exception(self, exc: BaseException | None) -> "FailureContextBuilder":
+    def with_exception(self, exc: BaseException | None) -> FailureContextBuilder:
         if exc is not None:
             self._exception = ExceptionInfo(
                 type=type(exc).__name__,
                 message=str(exc),
-                stacktrace="".join(
-                    traceback.format_exception(type(exc), exc, exc.__traceback__)
-                ),
+                stacktrace="".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
             )
         return self
 
     def with_exception_text(
         self, *, type: str = "", message: str = "", stacktrace: str = ""
-    ) -> "FailureContextBuilder":
+    ) -> FailureContextBuilder:
         self._exception = ExceptionInfo(type=type, message=message, stacktrace=stacktrace)
         return self
 
-    def with_assertion(self, message: str) -> "FailureContextBuilder":
+    def with_assertion(self, message: str) -> FailureContextBuilder:
         self._assertion_message = message or ""
         return self
 
     # -- evidence ----------------------------------------------------------- #
-    def with_screenshot(self, path: str | None) -> "FailureContextBuilder":
+    def with_screenshot(self, path: str | None) -> FailureContextBuilder:
         self._evidence.screenshot = path
         return self
 
-    def with_dom(self, snapshot: str, *, max_chars: int = 20000) -> "FailureContextBuilder":
+    def with_dom(self, snapshot: str, *, max_chars: int = 20000) -> FailureContextBuilder:
         self._evidence.dom_snapshot = (snapshot or "")[:max_chars]
         return self
 
-    def with_console(self, messages: list[Any]) -> "FailureContextBuilder":
+    def with_console(self, messages: list[Any]) -> FailureContextBuilder:
         for m in messages or []:
             if isinstance(m, ConsoleMessage):
                 self._evidence.console.append(m)
             elif isinstance(m, dict):
                 self._evidence.console.append(
-                    ConsoleMessage(level=m.get("level") or m.get("type") or "log",
-                                   text=m.get("text", ""))
+                    ConsoleMessage(
+                        level=m.get("level") or m.get("type") or "log", text=m.get("text", "")
+                    )
                 )
             else:
                 self._evidence.console.append(ConsoleMessage(text=str(m)))
         return self
 
-    def with_network(self, events: list[Any]) -> "FailureContextBuilder":
+    def with_network(self, events: list[Any]) -> FailureContextBuilder:
         for e in events or []:
             if isinstance(e, NetworkEvent):
                 self._evidence.network.append(e)
@@ -117,26 +116,26 @@ class FailureContextBuilder:
                 self._evidence.network.append(NetworkEvent(**known))
         return self
 
-    def with_api_responses(self, responses: list[dict[str, Any]]) -> "FailureContextBuilder":
+    def with_api_responses(self, responses: list[dict[str, Any]]) -> FailureContextBuilder:
         self._evidence.api_responses.extend(responses or [])
         return self
 
-    def with_logs(self, logs: list[Any]) -> "FailureContextBuilder":
-        for l in logs or []:
-            if isinstance(l, LogEntry):
-                self._evidence.logs.append(l)
-            elif isinstance(l, dict):
-                known = {k: l[k] for k in LogEntry.__dataclass_fields__ if k in l}
+    def with_logs(self, logs: list[Any]) -> FailureContextBuilder:
+        for entry in logs or []:
+            if isinstance(entry, LogEntry):
+                self._evidence.logs.append(entry)
+            elif isinstance(entry, dict):
+                known = {k: entry[k] for k in LogEntry.__dataclass_fields__ if k in entry}
                 self._evidence.logs.append(LogEntry(**known))
             else:
-                self._evidence.logs.append(LogEntry(message=str(l)))
+                self._evidence.logs.append(LogEntry(message=str(entry)))
         return self
 
-    def with_artifact(self, name: str, path: str) -> "FailureContextBuilder":
+    def with_artifact(self, name: str, path: str) -> FailureContextBuilder:
         self._evidence.artifacts[name] = path
         return self
 
-    def with_custom_evidence(self, key: str, value: Any) -> "FailureContextBuilder":
+    def with_custom_evidence(self, key: str, value: Any) -> FailureContextBuilder:
         self._evidence.custom[key] = value
         return self
 
@@ -149,7 +148,7 @@ class FailureContextBuilder:
         url: str | None = None,
         page_title: str | None = None,
         configuration: dict[str, Any] | None = None,
-    ) -> "FailureContextBuilder":
+    ) -> FailureContextBuilder:
         if environment is not None:
             self._execution.environment = environment
         if browser is not None:

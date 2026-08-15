@@ -39,7 +39,7 @@ except Exception as _exc:  # noqa: BLE001  # pragma: no cover
 
 logger = get_logger("qa_ai.pytest")
 
-_ENGINE: "AIEngine | None" = None
+_ENGINE: AIEngine | None = None
 
 
 def _plugin_active() -> bool:
@@ -51,7 +51,7 @@ def _plugin_active() -> bool:
     return bool(ai_config.enabled)
 
 
-def _get_engine() -> "AIEngine":
+def _get_engine() -> AIEngine:
     global _ENGINE
     if _ENGINE is None:
         _ENGINE = AIEngine()
@@ -115,7 +115,7 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo[Any]):
         logger.warning("AI failure analysis skipped due to error: %s", exc)
 
 
-def pytest_sessionstart(session: "pytest.Session") -> None:
+def pytest_sessionstart(session: pytest.Session) -> None:
     """Open a fresh consolidated AI report for this execution."""
     if not _plugin_active():
         return
@@ -125,7 +125,7 @@ def pytest_sessionstart(session: "pytest.Session") -> None:
         logger.debug("Could not start AI execution report: %s", exc)
 
 
-def pytest_sessionfinish(session: "pytest.Session", exitstatus: int) -> None:
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     """Render the single consolidated AI dashboard once the run completes."""
     if not _plugin_active():
         return
@@ -150,7 +150,7 @@ def _find_page(item: pytest.Item):
     return None
 
 
-def _capture_screenshot(page, item: pytest.Item) -> "str | None":
+def _capture_screenshot(page, item: pytest.Item) -> str | None:
     if page is None:
         return None
     try:
@@ -198,7 +198,7 @@ def _analyze(item: pytest.Item, call: pytest.CallInfo[Any], report: Any) -> None
     _attach_html(report, engine, result)
 
 
-def _attach_allure(engine: "AIEngine", result: Any) -> None:
+def _attach_allure(engine: AIEngine, result: Any) -> None:
     try:
         import allure  # type: ignore
 
@@ -212,18 +212,22 @@ def _attach_allure(engine: "AIEngine", result: Any) -> None:
             f"Recommended Fix: {analysis.recommended_fix}\n"
             f"Evidence:\n- " + "\n- ".join(analysis.evidence)
         )
-        allure.attach(summary, name="AI Root Cause Analysis", attachment_type=allure.attachment_type.TEXT)
+        allure.attach(
+            summary, name="AI Root Cause Analysis", attachment_type=allure.attachment_type.TEXT
+        )
         allure.attach(
             engine.bug_gen.to_markdown(result.bug_report),
             name="AI Bug Report",
             attachment_type=allure.attachment_type.TEXT,
         )
-        allure.attach(analysis.to_json(), name="AI Analysis JSON", attachment_type=allure.attachment_type.JSON)
+        allure.attach(
+            analysis.to_json(), name="AI Analysis JSON", attachment_type=allure.attachment_type.JSON
+        )
     except Exception as exc:  # noqa: BLE001  # pragma: no cover
         logger.debug("Could not attach AI results to Allure: %s", exc)
 
 
-def _attach_html(report: Any, engine: "AIEngine", result: Any) -> None:
+def _attach_html(report: Any, engine: AIEngine, result: Any) -> None:
     try:
         from pytest_html import extras  # type: ignore
 

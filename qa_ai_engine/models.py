@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -34,7 +34,7 @@ class FailureCategory(str, Enum):
     UNKNOWN = "Unknown"
 
     @classmethod
-    def coerce(cls, value: str | "FailureCategory | None") -> "FailureCategory":
+    def coerce(cls, value: str | FailureCategory | None) -> FailureCategory:
         """Best-effort coercion of arbitrary text to a known category."""
         if isinstance(value, cls):
             return value
@@ -111,7 +111,7 @@ class Evidence:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Evidence":
+    def from_dict(cls, data: dict[str, Any]) -> Evidence:
         known = {f: data[f] for f in cls.__dataclass_fields__ if f in data}
         return cls(**known)
 
@@ -161,7 +161,7 @@ class FailureRecord:
 
     test_name: str
     failure: str = ""
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     evidence: Evidence = field(default_factory=Evidence)
     metadata: TestMetadata = field(default_factory=TestMetadata)
     config: dict[str, Any] = field(default_factory=dict)
@@ -182,17 +182,20 @@ class FailureRecord:
         return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "FailureRecord":
+    def from_dict(cls, data: dict[str, Any]) -> FailureRecord:
         return cls(
             record_id=data.get("record_id", ""),
             test_name=data.get("test_name", ""),
             failure=data.get("failure", ""),
             timestamp=data.get("timestamp", ""),
             evidence=Evidence.from_dict(data.get("evidence", {}) or {}),
-            metadata=TestMetadata(**{
-                k: v for k, v in (data.get("metadata", {}) or {}).items()
-                if k in TestMetadata.__dataclass_fields__
-            }),
+            metadata=TestMetadata(
+                **{
+                    k: v
+                    for k, v in (data.get("metadata", {}) or {}).items()
+                    if k in TestMetadata.__dataclass_fields__
+                }
+            ),
             config=data.get("config", {}) or {},
         )
 
@@ -236,7 +239,7 @@ class AnalysisResult:
         return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "AnalysisResult":
+    def from_dict(cls, data: dict[str, Any]) -> AnalysisResult:
         return cls(
             root_cause=data.get("root_cause", ""),
             category=FailureCategory.coerce(data.get("category")),

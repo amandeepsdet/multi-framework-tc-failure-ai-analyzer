@@ -64,6 +64,17 @@ all = [
     "requests>=2.31",
     "python-dotenv>=1.0",
 ]
+# Everything a contributor needs: test, lint, format, type-check, coverage, build.
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.1",
+    "ruff>=0.6",
+    "black>=24.0",
+    "mypy>=1.8",
+    "build>=1.0",
+    "twine>=5.0",
+    "pyyaml>=6.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer"
@@ -97,3 +108,46 @@ packages = [
     "qa_ai_engine",
     "qa_ai_engine.assistant",
 ]
+
+# Ship PEP 561 typing markers so downstream type checkers discover the hints.
+[tool.setuptools.package-data]
+aiqa = ["py.typed"]
+qa_ai_engine = ["py.typed"]
+
+# --------------------------------------------------------------------------- #
+# Developer tooling — pyproject.toml is the single source of truth.
+# --------------------------------------------------------------------------- #
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+# Conservative, high-signal rule set: pycodestyle errors, pyflakes, import
+# sorting, bugbear, and pyupgrade. Expand over time as the codebase allows.
+select = ["E", "F", "I", "B", "UP"]
+# E501 (line length) is owned by Black, which deliberately leaves long string
+# literals, URLs and comments intact — enforcing it here would be redundant noise.
+# UP042 would rewrite `(str, Enum)` to `StrEnum`, which changes `str(member)`
+# output and would break the public enum string contract; kept for compatibility.
+ignore = ["E501", "UP042"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.mypy]
+python_version = "3.11"
+check_untyped_defs = true
+disallow_untyped_defs = false
+no_implicit_optional = true
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["aiqa", "qa_ai_engine"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false

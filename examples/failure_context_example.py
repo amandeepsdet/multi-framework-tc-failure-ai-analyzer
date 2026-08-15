@@ -21,8 +21,13 @@ from aiqa import FailureAnalyzer, FailureContextBuilder, render
 def main() -> None:
     context = (
         FailureContextBuilder()
-        .with_test("payments::test_refund", suite="payments", framework="custom",
-                   tags=["regression"], execution_time_s=1.8)
+        .with_test(
+            "payments::test_refund",
+            suite="payments",
+            framework="custom",
+            tags=["regression"],
+            execution_time_s=1.8,
+        )
         .with_exception_text(
             type="AssertionError",
             message="expected refund to succeed but API returned HTTP 403",

@@ -104,6 +104,22 @@ pip install multi-framework-tc-failure-ai-analyzer            # core SDK (offlin
 pip install "multi-framework-tc-failure-ai-analyzer[openai]"  # + optional LLM analysis
 ```
 
+The package ships **PEP 561** typing metadata (`py.typed`), so `mypy`/`pyright`
+pick up its type hints automatically.
+
+**Contributors** — install the full developer toolchain (test, lint, format,
+type-check, coverage, build) and the git hooks:
+
+```bash
+pip install -e ".[dev]"
+pre-commit install
+
+ruff check .        # lint
+black --check .     # format check
+mypy aiqa           # type check
+pytest              # tests (offline)
+```
+
 ## Quick Start
 
 Understand the SDK in under a minute:

@@ -77,12 +77,16 @@ class InMemoryIndex:
 
     # -- persistence -------------------------------------------------------- #
     def _load(self) -> None:
+        if self._path is None:
+            return
         try:
             self._docs = json.loads(self._path.read_text(encoding="utf-8"))
         except Exception:
             self._docs = []
 
     def _save(self) -> None:
+        if self._path is None:
+            return
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
             self._path.write_text(json.dumps(self._docs, ensure_ascii=False), encoding="utf-8")

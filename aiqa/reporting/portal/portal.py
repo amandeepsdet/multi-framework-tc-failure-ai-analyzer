@@ -38,7 +38,9 @@ class QualityPortal:
     """High-level API that records executions into the reports portal."""
 
     def __init__(self, reports_dir: Path | str | None = None):
-        root = reports_dir or os.getenv("AIQA_REPORTS_DIR", "reports")
+        root: Path | str = (
+            reports_dir if reports_dir is not None else os.getenv("AIQA_REPORTS_DIR", "reports")
+        )
         self.root = Path(root)
         self.history = ExecutionHistoryManager(self.root)
         self.knowledge = KnowledgeBase(self.root / _KNOWLEDGE_FILE)

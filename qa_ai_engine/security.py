@@ -18,8 +18,12 @@ _REDACTED = "***REDACTED***"
 # Ordered list of (compiled pattern, replacement) applied to free text.
 _TEXT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     # JSON-style "password": "value"
-    (re.compile(r'("?(?:password|passwd|pwd|secret|token|api[_-]?key)"?\s*[:=]\s*")([^"]*)(")', re.I),
-     rf"\1{_REDACTED}\3"),
+    (
+        re.compile(
+            r'("?(?:password|passwd|pwd|secret|token|api[_-]?key)"?\s*[:=]\s*")([^"]*)(")', re.I
+        ),
+        rf"\1{_REDACTED}\3",
+    ),
     # Authorization / X-Authorization headers (Bearer <jwt>)
     (re.compile(r"(?i)\b(bearer)\s+[A-Za-z0-9._\-]+"), rf"\1 {_REDACTED}"),
     (re.compile(r"(?i)(x-authorization\s*[:=]\s*)\S+"), rf"\1{_REDACTED}"),
@@ -32,9 +36,22 @@ _TEXT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
 
 # Mapping keys whose *values* are always redacted regardless of content.
 _SENSITIVE_KEYS = {
-    "password", "passwd", "pwd", "secret", "token", "jwt", "jwt_token",
-    "authorization", "x-authorization", "api_key", "apikey", "access_token",
-    "refresh_token", "cookie", "set-cookie", "client_secret",
+    "password",
+    "passwd",
+    "pwd",
+    "secret",
+    "token",
+    "jwt",
+    "jwt_token",
+    "authorization",
+    "x-authorization",
+    "api_key",
+    "apikey",
+    "access_token",
+    "refresh_token",
+    "cookie",
+    "set-cookie",
+    "client_secret",
 }
 
 _URL_PATTERN = re.compile(r"https?://[^\s\"'<>]+")

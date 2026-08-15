@@ -10,8 +10,9 @@ base. All run summaries are embedded as JSON so the portal works fully offline
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from .assets import BASE_CSS, THEME_JS
 from .insights import AIInsightsEngine

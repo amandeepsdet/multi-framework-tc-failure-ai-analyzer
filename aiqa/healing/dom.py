@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
-from typing import Any
 
 _INTERACTIVE = {"a", "button", "input", "select", "textarea", "option", "label"}
 _TEST_ID_ATTRS = ("data-testid", "data-test-id", "data-test", "data-cy", "data-qa")

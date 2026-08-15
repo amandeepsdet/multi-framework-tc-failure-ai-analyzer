@@ -57,8 +57,9 @@ def test_empty_dom_returns_reason_without_suggestions():
 
 
 def test_corrupted_dom_does_not_raise():
-    result = heal_locator("button.submit", "<html><body><button data-testid='x'>Go",
-                          target_text="Go")
+    result = heal_locator(
+        "button.submit", "<html><body><button data-testid='x'>Go", target_text="Go"
+    )
     # Malformed markup must be tolerated (no exception).
     assert isinstance(result.suggestions, list)
 
@@ -81,11 +82,13 @@ def test_result_is_json_serialisable():
 
 def test_ranker_labels_quality_tiers():
     ranker = LocatorRanker()
-    ranked = ranker.rank([
-        LocatorSuggestion(strategy="css", confidence=55),
-        LocatorSuggestion(strategy="test-id", confidence=95),
-        LocatorSuggestion(strategy="text", confidence=70),
-    ])
+    ranked = ranker.rank(
+        [
+            LocatorSuggestion(strategy="css", confidence=55),
+            LocatorSuggestion(strategy="test-id", confidence=95),
+            LocatorSuggestion(strategy="text", confidence=70),
+        ]
+    )
     assert [s.quality for s in ranked] == ["Best", "Good", "Weak"]
 
 

@@ -57,15 +57,15 @@ class ConfidenceReasoningBuilder:
         expected = _EXPECTED_SOURCES.get(category, ())
         missing = [src for src in expected if src not in available]
         for src in missing:
-            conflicting.append(f"Expected {src} evidence for a {category.value} failure was not captured")
+            conflicting.append(
+                f"Expected {src} evidence for a {category.value} failure was not captured"
+            )
 
         if category is FailureCategory.UNKNOWN:
             points.append("No decisive signal matched a known failure pattern")
 
         assessment = self._assessment(category, confidence)
-        low_note = self._low_confidence_note(
-            confidence, available, conflicting, category
-        )
+        low_note = self._low_confidence_note(confidence, available, conflicting, category)
 
         return ConfidenceReasoning(
             confidence=confidence,
@@ -109,8 +109,11 @@ class ConfidenceReasoningBuilder:
             points.append(f"{len(errors)} console error(s) logged during the failing step")
             supporting.append("Console")
 
-        if category in (FailureCategory.LOCATOR, FailureCategory.ELEMENT_NOT_FOUND,
-                        FailureCategory.ELEMENT_NOT_VISIBLE):
+        if category in (
+            FailureCategory.LOCATOR,
+            FailureCategory.ELEMENT_NOT_FOUND,
+            FailureCategory.ELEMENT_NOT_VISIBLE,
+        ):
             if ev.dom_snapshot:
                 points.append("DOM snapshot available for locator comparison")
                 supporting.append("DOM")
@@ -119,7 +122,12 @@ class ConfidenceReasoningBuilder:
 
         # De-duplicate while preserving order.
         seen: set[str] = set()
-        return [s for s in supporting if not (s in seen or seen.add(s))]
+        unique: list[str] = []
+        for s in supporting:
+            if s not in seen:
+                seen.add(s)
+                unique.append(s)
+        return unique
 
     @staticmethod
     def _historical_signals(
@@ -129,9 +137,7 @@ class ConfidenceReasoningBuilder:
             return
         best = max(similar, key=lambda s: s.similarity)
         if best.similarity >= 50:
-            points.append(
-                f"Similar historical failure matched ({best.similarity}% similarity)"
-            )
+            points.append(f"Similar historical failure matched ({best.similarity}% similarity)")
             supporting.append("Historical matches")
 
     @staticmethod

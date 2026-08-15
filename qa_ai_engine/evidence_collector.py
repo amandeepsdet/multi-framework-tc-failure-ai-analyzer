@@ -20,11 +20,10 @@ import platform
 import subprocess
 import sys
 import traceback
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 from .models import Evidence, FailureRecord, NetworkRecord, TestMetadata
 
@@ -131,7 +130,7 @@ class EvidenceCollector:
             test_name=test_name,
             browser=browser,
             environment=self._environment(),
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             execution_time_s=execution_time_s,
             os=f"{platform.system()} {platform.release()}",
             python_version=platform.python_version(),

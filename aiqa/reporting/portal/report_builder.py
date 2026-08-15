@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import json
 import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from html import escape
 from pathlib import Path
 from typing import Any
@@ -30,8 +30,11 @@ from .knowledge_base import FailureMemory
 from .models import ExecutionRun, RunFailure, utc_now_iso
 
 _SEVERITY_CLASS = {
-    "Blocker": "b-bad", "Critical": "b-bad", "Major": "b-warn",
-    "Minor": "b-info", "Trivial": "b-muted",
+    "Blocker": "b-bad",
+    "Critical": "b-bad",
+    "Major": "b-warn",
+    "Minor": "b-info",
+    "Trivial": "b-muted",
 }
 _HEALTH_CLASS = {"Healthy": "b-ok", "Warning": "b-warn", "Critical": "b-bad"}
 _BAND_CLASS = {"Excellent": "b-ok", "Good": "b-ok", "Warning": "b-warn", "Poor": "b-bad"}
@@ -46,7 +49,7 @@ class ExecutionReportBuilder:
         self.run_id = run_id
         self._run = ExecutionRun(run_id=run_id)
         self._pairs: list[tuple[RunFailure, AnalysisResult, FailureContext | None]] = []
-        self._start = datetime.now(timezone.utc)
+        self._start = datetime.now(UTC)
 
     # -- lifecycle ---------------------------------------------------------- #
     def begin(
@@ -61,7 +64,7 @@ class ExecutionReportBuilder:
         package_version: str = "",
         commit: str = "",
     ) -> None:
-        self._start = datetime.now(timezone.utc)
+        self._start = datetime.now(UTC)
         r = self._run
         r.run_name = run_name or self.run_id
         r.started = self._start.isoformat()
@@ -73,7 +76,9 @@ class ExecutionReportBuilder:
         r.package_version = package_version
         r.commit = commit
 
-    def add_failure(self, result: AnalysisResult, context: FailureContext | None = None) -> RunFailure:
+    def add_failure(
+        self, result: AnalysisResult, context: FailureContext | None = None
+    ) -> RunFailure:
         failure = RunFailure.from_analysis(result, context)
         # Inherit run-level metadata when the context omits it.
         failure.framework = failure.framework or self._run.framework
@@ -100,7 +105,7 @@ class ExecutionReportBuilder:
     def build_execution_run(self) -> ExecutionRun:
         r = self._run
         r.finished = utc_now_iso()
-        r.duration_s = round((datetime.now(timezone.utc) - self._start).total_seconds(), 2)
+        r.duration_s = round((datetime.now(UTC) - self._start).total_seconds(), 2)
         r.recompute_aggregates()
         r.report_rel = f"{self.run_id}/ai_report.html"
         return r
@@ -210,10 +215,13 @@ class ExecutionReportBuilder:
         summary = self._summary_html(run)
         charts = self._charts_html(run)
         compare = self._comparison_html(comparison)
-        failures = "".join(
-            self._failure_html(f, result, context, i, memories.get(f.signature))
-            for i, (f, result, context) in enumerate(self._pairs, 1)
-        ) or "<div class='card'>No failures in this execution.</div>"
+        failures = (
+            "".join(
+                self._failure_html(f, result, context, i, memories.get(f.signature))
+                for i, (f, result, context) in enumerate(self._pairs, 1)
+            )
+            or "<div class='card'>No failures in this execution.</div>"
+        )
 
         return f"""<!DOCTYPE html>
 <html lang="en" data-theme="light"><head>
@@ -272,7 +280,9 @@ function goTo(id){{
         rows = []
         for i, f in enumerate(run.failures, 1):
             sev_cls = _SEVERITY_CLASS.get(f.severity, "b-muted")
-            search = escape(f"{f.test_name} {f.category} {f.owner} {f.severity}".lower(), quote=True)
+            search = escape(
+                f"{f.test_name} {f.category} {f.owner} {f.severity}".lower(), quote=True
+            )
             rows.append(
                 f"<a class='nav-item' data-search='{search}' onclick=\"goTo('fail-{i}')\">"
                 f"<div class='tname'>✗ {escape(f.test_name)}</div>"
@@ -289,18 +299,23 @@ function goTo(id){{
     def _kpi_html(self, run: ExecutionRun) -> str:
         def kpi(label, value, sub=""):
             s = f" <small>{escape(str(sub))}</small>" if sub else ""
-            return (f"<div class='card kpi'><div class='label'>{escape(label)}</div>"
-                    f"<div class='value'>{escape(str(value))}{s}</div></div>")
-        return "".join([
-            kpi("Total", run.total),
-            kpi("Passed", run.passed),
-            kpi("Failed", run.failed),
-            kpi("Skipped", run.skipped),
-            kpi("Pass Rate", f"{run.pass_rate:.0f}", "%"),
-            kpi("Critical", run.critical_count),
-            kpi("Avg Confidence", f"{run.avg_confidence:.0f}", "%"),
-            kpi("Duration", f"{run.duration_s:.0f}", "s"),
-        ])
+            return (
+                f"<div class='card kpi'><div class='label'>{escape(label)}</div>"
+                f"<div class='value'>{escape(str(value))}{s}</div></div>"
+            )
+
+        return "".join(
+            [
+                kpi("Total", run.total),
+                kpi("Passed", run.passed),
+                kpi("Failed", run.failed),
+                kpi("Skipped", run.skipped),
+                kpi("Pass Rate", f"{run.pass_rate:.0f}", "%"),
+                kpi("Critical", run.critical_count),
+                kpi("Avg Confidence", f"{run.avg_confidence:.0f}", "%"),
+                kpi("Duration", f"{run.duration_s:.0f}", "s"),
+            ]
+        )
 
     def _summary_html(self, run: ExecutionRun) -> str:
         band_cls = _BAND_CLASS.get(run.quality_band, "b-muted")
@@ -354,16 +369,20 @@ function goTo(id){{
                 f"<div class='track'><div class='fill' style='width:{pct}%'></div></div>"
                 f"<div class='right'>{n}</div></div>"
             )
-        return (f"<h2 style='margin-top:0'>{escape(title)}</h2>"
-                f"<div class='bar-chart'>{''.join(rows)}</div>")
+        return (
+            f"<h2 style='margin-top:0'>{escape(title)}</h2>"
+            f"<div class='bar-chart'>{''.join(rows)}</div>"
+        )
 
     def _comparison_html(self, comparison: RunComparison | None) -> str:
         if comparison is None or not comparison.previous_run_id:
             return ""
         c = comparison
+
         def delta(v, unit=""):
             sign = "+" if v > 0 else ""
             return f"{sign}{v}{unit}"
+
         return f"""<h2>Comparison vs {escape(c.previous_run_id)}</h2>
 <div class="grid kpis">
   <div class="card kpi"><div class="label">New Failures</div><div class="value">{len(c.new_failures)}</div></div>
@@ -389,17 +408,26 @@ function goTo(id){{
         jira = self._jira_text(f, bug)
         azure = self._azure_text(f, bug)
 
-        evidence = "".join(f"<li>{escape(e)}</li>" for e in result.evidence) or "<li class='muted'>None</li>"
-        recs = "".join(
-            f"<li><strong>{escape(r.action)}</strong>"
-            + (f" — {escape(r.rationale)}" if r.rationale else "") + "</li>"
-            for r in result.recommendations
-        ) or "<li class='muted'>None</li>"
+        evidence = (
+            "".join(f"<li>{escape(e)}</li>" for e in result.evidence)
+            or "<li class='muted'>None</li>"
+        )
+        recs = (
+            "".join(
+                f"<li><strong>{escape(r.action)}</strong>"
+                + (f" — {escape(r.rationale)}" if r.rationale else "")
+                + "</li>"
+                for r in result.recommendations
+            )
+            or "<li class='muted'>None</li>"
+        )
         similar = "".join(
             f"<li>{escape(s.test_name)} — {escape(s.category)} ({s.similarity}% similar)</li>"
             for s in result.similar_failures
         )
-        similar_block = f"<h2>Similar Past Failures</h2><ul class='clean'>{similar}</ul>" if similar else ""
+        similar_block = (
+            f"<h2>Similar Past Failures</h2><ul class='clean'>{similar}</ul>" if similar else ""
+        )
         memory_block = self._memory_html(memory)
         screenshot_block = self._screenshot_html(f)
 
@@ -469,9 +497,11 @@ function goTo(id){{
     def _screenshot_html(self, f: RunFailure) -> str:
         if not f.screenshot:
             return ""
-        return (f"<h2>Screenshot</h2><a href='{escape(f.screenshot)}' target='_blank'>"
-                f"<img src='{escape(f.screenshot)}' alt='screenshot' "
-                f"style='max-width:100%;border:1px solid var(--border);border-radius:10px'></a>")
+        return (
+            f"<h2>Screenshot</h2><a href='{escape(f.screenshot)}' target='_blank'>"
+            f"<img src='{escape(f.screenshot)}' alt='screenshot' "
+            f"style='max-width:100%;border:1px solid var(--border);border-radius:10px'></a>"
+        )
 
     @staticmethod
     def _jira_text(f: RunFailure, bug) -> str:

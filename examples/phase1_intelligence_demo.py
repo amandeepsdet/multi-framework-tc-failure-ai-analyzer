@@ -44,10 +44,14 @@ def main(out_dir: str = "sample_output/phase1") -> None:
         .with_test("tests/checkout/test_place_order.py::test_place_order")
         .with_exception_text(type="AssertionError", message="expected 200 but got 500")
         .with_assertion("Order confirmation was not displayed")
-        .with_network([
-            {"method": "POST", "url": "/api/checkout", "status": 500, "duration_ms": 812},
-        ])
-        .with_execution(environment="staging", browser="chromium", url="https://shop.example/checkout")
+        .with_network(
+            [
+                {"method": "POST", "url": "/api/checkout", "status": 500, "duration_ms": 812},
+            ]
+        )
+        .with_execution(
+            environment="staging", browser="chromium", url="https://shop.example/checkout"
+        )
         .with_screenshot("screenshots/checkout_failure.png")
         .build()
     )

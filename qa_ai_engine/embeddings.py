@@ -15,7 +15,6 @@ import re
 from abc import ABC, abstractmethod
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 
 logger = get_logger("ai.embeddings")
@@ -44,7 +43,7 @@ class HashEmbedder(BaseEmbedder):
 
     def _tokens(self, text: str) -> list[str]:
         words = _TOKEN_RE.findall((text or "").lower())
-        bigrams = [f"{a}_{b}" for a, b in zip(words, words[1:])]
+        bigrams = [f"{a}_{b}" for a, b in zip(words, words[1:], strict=False)]
         return words + bigrams
 
     def embed(self, text: str) -> list[float]:
@@ -92,7 +91,7 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     """Cosine similarity of two equal-length vectors (0 when degenerate)."""
     if not a or not b or len(a) != len(b):
         return 0.0
-    dot = sum(x * y for x, y in zip(a, b))
+    dot = sum(x * y for x, y in zip(a, b, strict=False))
     na = math.sqrt(sum(x * x for x in a))
     nb = math.sqrt(sum(y * y for y in b))
     if na == 0 or nb == 0:

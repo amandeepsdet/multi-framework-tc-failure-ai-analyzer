@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from ...core.enums import FailureCategory, Severity
@@ -26,7 +26,7 @@ _SECURITY_CATEGORIES = {
 
 
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def failure_signature(test_id: str, category: str) -> str:
@@ -84,7 +84,7 @@ class RunFailure:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "RunFailure":
+    def from_dict(cls, data: dict[str, Any]) -> RunFailure:
         known = {k: data[k] for k in cls.__dataclass_fields__ if k in data}
         return cls(**known)
 
@@ -93,15 +93,12 @@ class RunFailure:
         cls,
         result: AnalysisResult,
         context: FailureContext | None = None,
-    ) -> "RunFailure":
+    ) -> RunFailure:
         rc = result.root_cause
         test_id = context.metadata.test_id if context else ""
         test_name = context.test_name if context else "unknown"
         category = rc.category.value
-        statuses = (
-            [n.status for n in context.evidence.network if n.status]
-            if context else []
-        )
+        statuses = [n.status for n in context.evidence.network if n.status] if context else []
         locator = ""
         if context and context.evidence.custom:
             locator = str(
@@ -256,7 +253,7 @@ class ExecutionRun:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ExecutionRun":
+    def from_dict(cls, data: dict[str, Any]) -> ExecutionRun:
         scalar = {
             k: data[k]
             for k in cls.__dataclass_fields__

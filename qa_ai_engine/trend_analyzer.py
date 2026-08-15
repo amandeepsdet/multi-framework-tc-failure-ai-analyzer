@@ -13,7 +13,6 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 from .history_store import HistoryStore
 
@@ -92,7 +91,9 @@ class TrendAnalyzer:
         report.category_distribution = dict(categories.most_common())
         report.most_common_failures = [{"test": t, "count": c} for t, c in tests.most_common(10)]
         report.most_failing_apis = [{"endpoint": a, "count": c} for a, c in apis.most_common(10)]
-        report.most_failing_components = [{"component": w, "count": c} for w, c in components.most_common(10)]
+        report.most_failing_components = [
+            {"component": w, "count": c} for w, c in components.most_common(10)
+        ]
         report.average_runtime_s = round(sum(runtimes) / len(runtimes), 2) if runtimes else None
         report.failure_trend = dict(sorted(by_day.items()))
         report.flaky_tests = self._detect_flaky(items)
@@ -150,7 +151,9 @@ class TrendAnalyzer:
             risk, recommendation = "High", "Investigate"
         else:
             risk, recommendation = "Critical", "Block Release"
-        return ReleaseReadiness(score=score, risk=risk, recommendation=recommendation, rationale=rationale)
+        return ReleaseReadiness(
+            score=score, risk=risk, recommendation=recommendation, rationale=rationale
+        )
 
 
 def _short_url(url: str) -> str:

@@ -71,8 +71,14 @@ def test_export_all_writes_expected_files(tmp_path):
     result, context = _analyzed(network=[{"status": 500, "url": "/api/checkout"}])
     bug = BugGenerationEngine().build(result, context)
     written = BugExporter().export_all(bug, tmp_path)
-    for name in ("bug.md", "bug.html", "bug.json", "jira.json",
-                 "azure_work_item.json", "github_issue.md"):
+    for name in (
+        "bug.md",
+        "bug.html",
+        "bug.json",
+        "jira.json",
+        "azure_work_item.json",
+        "github_issue.md",
+    ):
         assert name in written
         assert written[name].exists()
         assert written[name].read_text(encoding="utf-8").strip()

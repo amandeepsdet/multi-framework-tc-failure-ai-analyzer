@@ -34,7 +34,6 @@ class ConsoleReporter(Reporter):
     def summary_line(self, result: AnalysisResult, context: FailureContext | None = None) -> str:
         """Convenience one-liner (no newline), handy for logging on failure."""
         rc = result.root_cause
-        name = context.test_name if context else "test"
         return (
             f"AI analysis: {rc.summary} ({rc.category.value}, "
             f"confidence={result.confidence.value}%) — owner={result.owner}"

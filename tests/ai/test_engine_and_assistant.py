@@ -5,11 +5,11 @@ from __future__ import annotations
 import pytest
 
 from qa_ai_engine import AIConfig, AIEngine
+from qa_ai_engine.assistant import ChatEngine, QAAssistant
+from qa_ai_engine.embeddings import HashEmbedder
 from qa_ai_engine.history_store import HistoryStore
 from qa_ai_engine.prompt_builder import PromptBuilder
 from qa_ai_engine.vector_store import JSONVectorStore
-from qa_ai_engine.embeddings import HashEmbedder
-from qa_ai_engine.assistant import ChatEngine, QAAssistant
 
 
 @pytest.fixture

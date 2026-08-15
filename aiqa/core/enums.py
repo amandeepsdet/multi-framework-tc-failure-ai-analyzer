@@ -42,7 +42,7 @@ class FailureCategory(str, Enum):
     UNKNOWN = "Unknown"
 
     @classmethod
-    def coerce(cls, value: "str | FailureCategory | None") -> "FailureCategory":
+    def coerce(cls, value: str | FailureCategory | None) -> FailureCategory:
         """Best-effort coercion of arbitrary text to a known category."""
         if isinstance(value, cls):
             return value
@@ -57,14 +57,37 @@ class FailureCategory(str, Enum):
             cls.AUTHORIZATION: ("forbidden", "permission", "denied", "403"),
             cls.SECURITY: ("security", "csrf", "xss", "certificate", "ssl", "tls", "vulnerab"),
             cls.BACKEND: ("server error", "500", "backend", "upstream", "502", "503"),
-            cls.DATABASE: ("database", "sql", "deadlock", "constraint", "no such table", "connection pool"),
-            cls.ELEMENT_NOT_FOUND: ("element not found", "no such element", "no node found", "unable to locate"),
-            cls.ELEMENT_NOT_VISIBLE: ("not visible", "not displayed", "not clickable", "not interactable"),
+            cls.DATABASE: (
+                "database",
+                "sql",
+                "deadlock",
+                "constraint",
+                "no such table",
+                "connection pool",
+            ),
+            cls.ELEMENT_NOT_FOUND: (
+                "element not found",
+                "no such element",
+                "no node found",
+                "unable to locate",
+            ),
+            cls.ELEMENT_NOT_VISIBLE: (
+                "not visible",
+                "not displayed",
+                "not clickable",
+                "not interactable",
+            ),
             cls.LOCATOR: ("locator", "selector", "strict mode", "xpath", "css selector"),
             cls.TIMEOUT: ("timeout", "timed out", "deadline", "waiting for"),
             cls.NETWORK: ("network", "connection", "dns", "econnrefused", "unreachable"),
             cls.PERFORMANCE: ("slow", "latency", "performance", "too long"),
-            cls.DEPENDENCY: ("modulenotfound", "importerror", "no module named", "dependency", "package"),
+            cls.DEPENDENCY: (
+                "modulenotfound",
+                "importerror",
+                "no module named",
+                "dependency",
+                "package",
+            ),
             cls.MOBILE: ("appium", "android", "ios", "mobile", "device"),
             cls.FLAKY: ("flaky", "intermittent", "race condition"),
             cls.API: ("api", "endpoint", "rest", "request failed"),
@@ -88,7 +111,7 @@ class Severity(str, Enum):
     TRIVIAL = "Trivial"
 
     @classmethod
-    def coerce(cls, value: "str | Severity | None") -> "Severity":
+    def coerce(cls, value: str | Severity | None) -> Severity:
         if isinstance(value, cls):
             return value
         if not value:
@@ -109,7 +132,7 @@ class RiskLevel(str, Enum):
     LOW = "Low"
 
     @classmethod
-    def coerce(cls, value: "str | RiskLevel | None") -> "RiskLevel":
+    def coerce(cls, value: str | RiskLevel | None) -> RiskLevel:
         if isinstance(value, cls):
             return value
         if not value:

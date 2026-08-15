@@ -4,6 +4,19 @@ This document explains *why* `aiqa` is built the way it is. The guiding idea:
 **a failure analysis engine should know nothing about the tool that produced the
 failure.** Everything else follows from that.
 
+## Two packages: `aiqa` and `qa_ai_engine`
+
+The repository ships **two** importable packages, by design:
+
+| Package | Role | Status |
+|---------|------|--------|
+| **`aiqa`** | The modern, framework-agnostic Quality Engineering **SDK** — the product. Pure core, adapters, analysis engine, reporting, healing, and the Quality Portal. | **Actively developed.** All new features land here. |
+| **`qa_ai_engine`** | The legacy pytest + Playwright **plugin/assistant** layer (the original entry point) plus the CLI/chat assistant. | **Compatibility-only / maintenance.** Kept so existing integrations keep working; no new feature development, not currently planned for removal. |
+
+Both ship PEP 561 typing markers (`py.typed`). New work should target `aiqa`;
+`qa_ai_engine` is preserved for backward compatibility and is not removed. Any
+future deprecation would be announced in `CHANGELOG.md` with a migration path.
+
 ## The one-directional architecture
 
 ```

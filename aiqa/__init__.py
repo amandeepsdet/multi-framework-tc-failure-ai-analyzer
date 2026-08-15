@@ -61,7 +61,13 @@ from .core import (
     SimilarFailure,
 )
 from .core.interfaces import Analyzer, FrameworkAdapter, LLMProvider, Reporter, SimilarityIndex
-from .healing import HealingResult, LocatorHealingEngine, LocatorRanker, LocatorSuggestion, heal_locator
+from .healing import (
+    HealingResult,
+    LocatorHealingEngine,
+    LocatorRanker,
+    LocatorSuggestion,
+    heal_locator,
+)
 from .reporting import (
     BugExporter,
     BugGenerationEngine,
@@ -138,7 +144,8 @@ def analyze(context: FailureContext, **kwargs) -> AnalysisResult:
     return FailureAnalyzer(**kwargs).analyze(context)
 
 
-def render(result: AnalysisResult, format: str = "markdown",
-           context: FailureContext | None = None) -> str:
+def render(
+    result: AnalysisResult, format: str = "markdown", context: FailureContext | None = None
+) -> str:
     """Convenience: render an :class:`AnalysisResult` in the given format."""
     return get_reporter(format).render(result, context)

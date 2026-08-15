@@ -76,8 +76,14 @@ class HTMLReporter(Reporter):
             conflicts = f'<p class="warn"><strong>Conflicting / missing signals:</strong></p><ul>{items}</ul>'
         used = ""
         if cr.supporting_evidence:
-            used = f'<p><small>Evidence used: {escape(", ".join(cr.supporting_evidence))}</small></p>'
-        low = f'<p class="warn">{escape(cr.low_confidence_note)}</p>' if cr.low_confidence_note else ""
+            used = (
+                f'<p><small>Evidence used: {escape(", ".join(cr.supporting_evidence))}</small></p>'
+            )
+        low = (
+            f'<p class="warn">{escape(cr.low_confidence_note)}</p>'
+            if cr.low_confidence_note
+            else ""
+        )
         assess = f'<p class="assess">{escape(cr.assessment)}</p>' if cr.assessment else ""
         return (
             '<div class="reasoning"><h2>AI Confidence Reasoning</h2>'

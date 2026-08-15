@@ -11,8 +11,9 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 from qa_ai_engine._logging import get_logger
 
@@ -27,7 +28,7 @@ class Intent:
 
     name: str
     patterns: list[str]
-    handler: Callable[["ChatEngine", str], Any]
+    handler: Callable[[ChatEngine, str], Any]
 
     def matches(self, text: str) -> bool:
         return any(re.search(p, text, re.I) for p in self.patterns)
@@ -53,30 +54,76 @@ class ChatEngine:
         a = self.assistant
         return [
             Intent("flaky", [r"\bflaky\b", r"intermittent"], lambda e, t: a.find_flaky_tests()),
-            Intent("release", [r"release read", r"ready to release", r"release score", r"ship it"],
-                   lambda e, t: a.release_readiness()),
-            Intent("compare", [r"compare runs?", r"since last run", r"new failures", r"\bregressions?\b"],
-                   lambda e, t: a.compare_runs()),
-            Intent("quality", [r"quality (summary|score|overview)", r"build health", r"how healthy"],
-                   lambda e, t: a.quality_summary()),
-            Intent("trend", [r"fail most", r"most often", r"trend", r"take longest", r"which components",
-                             r"which apis", r"sprint quality", r"executive summary"],
-                   lambda e, t: a.trend_analysis()),
-            Intent("bug", [r"\bbug\b", r"jira", r"azure devops", r"github issue", r"work item"],
-                   lambda e, t: a.generate_bug(_extract_quoted(t) or None)),
-            Intent("stacktrace", [r"stacktrace", r"traceback", r"stack trace"],
-                   lambda e, t: a.explain_stacktrace(t)),
-            Intent("api_resp", [r"api response", r"explain this api"],
-                   lambda e, t: a.explain_api_response(t)),
-            Intent("search", [r"^search\b", r"similar failures", r"show .*failures", r"historical failures",
-                              r"failures from"],
-                   lambda e, t: a.search(_extract_quoted(t, t))),
-            Intent("explain_test", [r"why did", r"why is", r"explain .*failure", r"explain .*test", r"\bTC-?\d+\b"],
-                   lambda e, t: a.explain_test(_extract_quoted(t, t))),
-            Intent("summarize", [r"summariz", r"summary of", r"summarize run"],
-                   lambda e, t: a.summarize_run()),
-            Intent("last_failure", [r"last failure", r"latest failure", r"what failed"],
-                   lambda e, t: a.analyze_last_failure()),
+            Intent(
+                "release",
+                [r"release read", r"ready to release", r"release score", r"ship it"],
+                lambda e, t: a.release_readiness(),
+            ),
+            Intent(
+                "compare",
+                [r"compare runs?", r"since last run", r"new failures", r"\bregressions?\b"],
+                lambda e, t: a.compare_runs(),
+            ),
+            Intent(
+                "quality",
+                [r"quality (summary|score|overview)", r"build health", r"how healthy"],
+                lambda e, t: a.quality_summary(),
+            ),
+            Intent(
+                "trend",
+                [
+                    r"fail most",
+                    r"most often",
+                    r"trend",
+                    r"take longest",
+                    r"which components",
+                    r"which apis",
+                    r"sprint quality",
+                    r"executive summary",
+                ],
+                lambda e, t: a.trend_analysis(),
+            ),
+            Intent(
+                "bug",
+                [r"\bbug\b", r"jira", r"azure devops", r"github issue", r"work item"],
+                lambda e, t: a.generate_bug(_extract_quoted(t) or None),
+            ),
+            Intent(
+                "stacktrace",
+                [r"stacktrace", r"traceback", r"stack trace"],
+                lambda e, t: a.explain_stacktrace(t),
+            ),
+            Intent(
+                "api_resp",
+                [r"api response", r"explain this api"],
+                lambda e, t: a.explain_api_response(t),
+            ),
+            Intent(
+                "search",
+                [
+                    r"^search\b",
+                    r"similar failures",
+                    r"show .*failures",
+                    r"historical failures",
+                    r"failures from",
+                ],
+                lambda e, t: a.search(_extract_quoted(t, t)),
+            ),
+            Intent(
+                "explain_test",
+                [r"why did", r"why is", r"explain .*failure", r"explain .*test", r"\bTC-?\d+\b"],
+                lambda e, t: a.explain_test(_extract_quoted(t, t)),
+            ),
+            Intent(
+                "summarize",
+                [r"summariz", r"summary of", r"summarize run"],
+                lambda e, t: a.summarize_run(),
+            ),
+            Intent(
+                "last_failure",
+                [r"last failure", r"latest failure", r"what failed"],
+                lambda e, t: a.analyze_last_failure(),
+            ),
         ]
 
     def route(self, text: str) -> dict[str, Any]:
@@ -104,8 +151,10 @@ class ChatEngine:
         status = self.assistant.status()
         print("=" * 68)
         print(" QA AI Assistant — interactive mode (type 'help', 'exit')")
-        print(f" provider={status['provider']} | llm_available={status['llm_available']} "
-              f"| history={status['history_count']}")
+        print(
+            f" provider={status['provider']} | llm_available={status['llm_available']} "
+            f"| history={status['history_count']}"
+        )
         print("=" * 68)
         while True:
             try:

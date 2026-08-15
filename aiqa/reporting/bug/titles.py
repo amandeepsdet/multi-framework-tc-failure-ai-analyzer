@@ -48,8 +48,11 @@ def bug_title(result: AnalysisResult, context: FailureContext | None = None) -> 
         return f"Authorization denied — {sub.lower() or 'insufficient permissions'} during {scope}"
     if cat in (FailureCategory.BACKEND, FailureCategory.API):
         return f"{_http_code(context)} returned during {scope}"
-    if cat in (FailureCategory.LOCATOR, FailureCategory.ELEMENT_NOT_FOUND,
-               FailureCategory.ELEMENT_NOT_VISIBLE):
+    if cat in (
+        FailureCategory.LOCATOR,
+        FailureCategory.ELEMENT_NOT_FOUND,
+        FailureCategory.ELEMENT_NOT_VISIBLE,
+    ):
         return f"UI locator became stale after DOM update during {scope}"
     if cat in (FailureCategory.TIMEOUT, FailureCategory.PERFORMANCE):
         return f"Navigation timeout exceeded during {scope}"

@@ -16,7 +16,6 @@ provider is supplied.
 from __future__ import annotations
 
 import json
-from typing import Any
 
 from ..core.enums import FailureCategory
 from ..core.interfaces import Analyzer, LLMProvider, SimilarityIndex
@@ -178,7 +177,9 @@ class FailureAnalyzer(Analyzer):
         if not result.evidence:
             result.evidence = grounded
         if not result.recommendations:
-            result.recommendations = [Recommendation(action=result.root_cause.detail or "Investigate the failure.")]
+            result.recommendations = [
+                Recommendation(action=result.root_cause.detail or "Investigate the failure.")
+            ]
         return result
 
     def _build_prompt(self, context: FailureContext, similar: list[SimilarFailure]) -> str:

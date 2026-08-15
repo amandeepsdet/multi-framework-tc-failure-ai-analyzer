@@ -35,8 +35,13 @@ def build_context():
     """Step 1 — a FailureContext, exactly what any adapter produces."""
     return (
         FailureContextBuilder()
-        .with_test("checkout::test_pay", suite="checkout", framework="pytest",
-                   tags=["smoke", "payments"], execution_time_s=3.2)
+        .with_test(
+            "checkout::test_pay",
+            suite="checkout",
+            framework="pytest",
+            tags=["smoke", "payments"],
+            execution_time_s=3.2,
+        )
         .with_exception_text(
             type="AssertionError",
             message="expected 200 but server returned HTTP 500",
@@ -60,8 +65,10 @@ def main(out_dir: str = "sample_output") -> None:
 
     # 2. Analyzer -> 3. Root Cause -----------------------------------------
     result = FailureAnalyzer().analyze(context)
-    print(f"2. Analyzed  -> category={result.category.value} "
-          f"confidence={result.confidence.value}% owner={result.owner}")
+    print(
+        f"2. Analyzed  -> category={result.category.value} "
+        f"confidence={result.confidence.value}% owner={result.owner}"
+    )
     print(f"3. Root cause: {result.root_cause.summary}")
 
     # 4. Suggested Fix ------------------------------------------------------
@@ -71,9 +78,7 @@ def main(out_dir: str = "sample_output") -> None:
 
     # 5. Bug Report ---------------------------------------------------------
     bug = BugReportBuilder().build(result, context)
-    (out / "sample_bug_report.md").write_text(
-        BugReportBuilder.to_markdown(bug), encoding="utf-8"
-    )
+    (out / "sample_bug_report.md").write_text(BugReportBuilder.to_markdown(bug), encoding="utf-8")
     print(f"5. Bug report: {bug.title}")
 
     # 6. Reports (Markdown / JSON / HTML) ----------------------------------

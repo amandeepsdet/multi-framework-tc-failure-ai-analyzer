@@ -9,8 +9,8 @@ mapping in one place, applies sensible defaults, and never echoes secrets.
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Mapping
 
 # Values accepted as "true" for boolean inputs.
 _TRUE = {"1", "true", "yes", "on"}
@@ -67,9 +67,7 @@ def load_inputs(env: Mapping[str, str] | None = None) -> ActionInputs:
 
     framework = (_get(env, "framework", "auto") or "auto").strip().lower()
     if framework not in VALID_FRAMEWORKS:
-        warnings.append(
-            f"Unknown framework '{framework}'; falling back to auto-detection."
-        )
+        warnings.append(f"Unknown framework '{framework}'; falling back to auto-detection.")
         framework = "auto"
 
     mode = (_get(env, "analysis-mode", "auto") or "auto").strip().lower()
@@ -87,8 +85,9 @@ def load_inputs(env: Mapping[str, str] | None = None) -> ActionInputs:
         llm_provider=(_get(env, "llm-provider", "none") or "none").strip(),
         llm_api_key=_get(env, "llm-api-key", "").strip(),
         analysis_mode=mode,
-        artifact_name=(_get(env, "artifact-name", "aiqa-failure-analysis")
-                       or "aiqa-failure-analysis").strip(),
+        artifact_name=(
+            _get(env, "artifact-name", "aiqa-failure-analysis") or "aiqa-failure-analysis"
+        ).strip(),
         warnings=warnings,
     )
     return inputs

@@ -10,11 +10,9 @@ as empty strings, so a template never crashes a run.
 from __future__ import annotations
 
 import re
-from pathlib import Path
 from typing import Any
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 
 logger = get_logger("ai.prompt_builder")
@@ -53,9 +51,9 @@ _DEFAULT_TEMPLATES: dict[str, str] = {
         "TEST: {{TEST_NAME}}\nCATEGORY: {{CATEGORY}}\nROOT CAUSE: {{ROOT_CAUSE}}\n"
         "SEVERITY: {{SEVERITY}}\nENVIRONMENT: {{ENVIRONMENT}}\n"
         "EVIDENCE:\n{{EVIDENCE}}\nRECOMMENDED FIX: {{RECOMMENDED_FIX}}\n\n"
-        "Respond with ONLY JSON: {\"title\":\"\",\"description\":\"\","
-        "\"steps\":[],\"expected\":\"\",\"actual\":\"\",\"severity\":\"\","
-        "\"priority\":\"P1|P2|P3\",\"owner\":\"\",\"suggested_fix\":\"\"}"
+        'Respond with ONLY JSON: {"title":"","description":"",'
+        '"steps":[],"expected":"","actual":"","severity":"",'
+        '"priority":"P1|P2|P3","owner":"","suggested_fix":""}'
     ),
     "release_summary": (
         "You are a release manager. Given the aggregated failure statistics "
@@ -66,22 +64,22 @@ _DEFAULT_TEMPLATES: dict[str, str] = {
         "Analyse the following test execution history and identify flaky tests "
         "(intermittent pass/fail with no code change). Use only the data given.\n\n"
         "HISTORY:\n{{HISTORY}}\n\nRespond with ONLY JSON: "
-        "{\"flaky_tests\":[{\"test\":\"\",\"reason\":\"\",\"confidence\":0}]}"
+        '{"flaky_tests":[{"test":"","reason":"","confidence":0}]}'
     ),
     "locator_analysis": (
         "A Playwright locator failed. Compare the expected locator against the "
         "current DOM and suggest the most likely correct replacement.\n\n"
         "EXPECTED LOCATOR: {{EXPECTED_LOCATOR}}\n\nDOM (truncated):\n{{DOM}}\n\n"
-        "Respond with ONLY JSON: {\"suggestions\":[{\"locator\":\"\","
-        "\"similarity\":0-100,\"rationale\":\"\"}]}"
+        'Respond with ONLY JSON: {"suggestions":[{"locator":"",'
+        '"similarity":0-100,"rationale":""}]}'
     ),
     "visual_analysis": (
         "Inspect the attached screenshot of a web dashboard under test and "
         "answer strictly from what is visible: Is a UI element missing? Is a loading "
         "spinner visible? Is the dashboard blank? Is the layout broken? Is an "
         "authentication/login page shown? Respond with ONLY JSON: "
-        "{\"widget_missing\":bool,\"spinner_visible\":bool,\"dashboard_blank\":bool,"
-        "\"layout_broken\":bool,\"auth_page_shown\":bool,\"summary\":\"\"}"
+        '{"widget_missing":bool,"spinner_visible":bool,"dashboard_blank":bool,'
+        '"layout_broken":bool,"auth_page_shown":bool,"summary":""}'
     ),
 }
 

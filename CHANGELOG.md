@@ -20,6 +20,19 @@ All notable changes to this project are documented here. This project adheres to
   [docs/github-action.md](docs/github-action.md). Includes local test scripts and
   automated tests under `tests/action/`.
 
+### Changed
+- **Developer tooling hardening** (no runtime/API changes). Shipped **PEP 561**
+  typing markers (`aiqa/py.typed`, `qa_ai_engine/py.typed`) so downstream type
+  checkers discover the annotations. Centralized all tool config in
+  `pyproject.toml` (`ruff`, `black` at line-length 100, `mypy`, `coverage`). Added
+  a `dev` optional-dependency extra (`pip install -e ".[dev]"`). Made **ruff** and
+  **black** blocking in CI and added **mypy** + **coverage** to the 3.11/3.12/3.13
+  matrix. Added a dedicated `action` pytest marker (replacing a collection hook),
+  a `.pre-commit-config.yaml`, and consolidated generic secret masking into a
+  reusable `aiqa.core.masking` utility that the GitHub Action reuses. Documented
+  the modern `aiqa` SDK vs. the legacy compatibility-only `qa_ai_engine` package
+  in `DESIGN.md`. `mypy aiqa` is clean; SDK coverage ~87%.
+
 ## [3.2.0] — 2026-08-09
 
 Enterprise AI capabilities. Purely additive and fully backward compatible — the

@@ -61,8 +61,7 @@ class MarkdownReporter(Reporter):
         cr = result.reasoning_detail
         if cr is None:
             return []
-        out = ["", "## AI Confidence Reasoning", "",
-               f"**{cr.badge} — {cr.confidence}%**", ""]
+        out = ["", "## AI Confidence Reasoning", "", f"**{cr.badge} — {cr.confidence}%**", ""]
         for p in cr.reasoning_points:
             out.append(f"- ✓ {p}")
         if cr.conflicting_evidence:

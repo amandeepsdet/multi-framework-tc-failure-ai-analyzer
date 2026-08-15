@@ -27,6 +27,7 @@ def on_test_failure(driver, exception: BaseException, test_name: str) -> None:
 
 
 if __name__ == "__main__":
+
     class FakeDriver:
         current_url = "https://app.example.com/orders"
         title = "Orders"

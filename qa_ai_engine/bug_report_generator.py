@@ -11,10 +11,8 @@ from __future__ import annotations
 import html
 import json
 from pathlib import Path
-from typing import Any
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 from .llm_client import BaseLLMClient, get_llm_client
 from .models import AnalysisResult, BugReport, FailureRecord
@@ -75,7 +73,9 @@ class BugReportGenerator:
             environment=environment,
             steps=steps,
             expected="The test step completes successfully with valid data/UI state.",
-            actual=(ev.assertion_message or record.failure or ev.exception_message or "Test failed."),
+            actual=(
+                ev.assertion_message or record.failure or ev.exception_message or "Test failed."
+            ),
             evidence=analysis.evidence,
             severity=severity,
             priority=_PRIORITY_BY_SEVERITY.get(severity, "P2"),
@@ -84,7 +84,9 @@ class BugReportGenerator:
             suggested_fix=analysis.recommended_fix,
         )
 
-    def _augment_with_llm(self, report: BugReport, record: FailureRecord, analysis: AnalysisResult) -> None:
+    def _augment_with_llm(
+        self, report: BugReport, record: FailureRecord, analysis: AnalysisResult
+    ) -> None:
         prompt = self.prompts.build(
             "bug_report",
             {

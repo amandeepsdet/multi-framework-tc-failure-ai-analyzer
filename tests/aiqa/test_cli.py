@@ -49,7 +49,9 @@ def test_explain_failure_json(tmp_path, capsys):
 def test_heal_locator(tmp_path, capsys):
     dom = tmp_path / "dom.html"
     dom.write_text("<button data-testid='order' class='b'>Place order</button>", encoding="utf-8")
-    rc = main(["heal-locator", "--old", "button.place-order", "--dom", str(dom), "--text", "Place order"])
+    rc = main(
+        ["heal-locator", "--old", "button.place-order", "--dom", str(dom), "--text", "Place order"]
+    )
     assert rc == 0
     out = capsys.readouterr().out
     assert "get_by_test_id('order')" in out

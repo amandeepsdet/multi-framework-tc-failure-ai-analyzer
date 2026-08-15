@@ -29,7 +29,8 @@ class BugExporter:
             "| Field | Value |",
             "| --- | --- |",
             f"| Category | {bug.category}"
-            + (f" / {bug.subcategory}" if bug.subcategory else "") + " |",
+            + (f" / {bug.subcategory}" if bug.subcategory else "")
+            + " |",
             f"| Severity | {bug.severity} |",
             f"| Priority | {bug.priority} |",
             f"| Risk | {bug.risk or 'n/a'} |",
@@ -64,7 +65,7 @@ class BugExporter:
         if bug.preventive_action:
             lines += ["", "## Preventive action", bug.preventive_action]
         lines += self._evidence_md(bug)
-        return "\n".join(l for l in lines if l is not None) + "\n"
+        return "\n".join(line for line in lines if line is not None) + "\n"
 
     @staticmethod
     def _evidence_md(bug: BugReport) -> list[str]:
@@ -76,7 +77,7 @@ class BugExporter:
         if bug.network:
             out += ["", "### Network"] + [f"- `{n}`" for n in bug.network]
         if bug.logs:
-            out += ["", "### Logs"] + [f"- `{l}`" for l in bug.logs]
+            out += ["", "### Logs"] + [f"- `{entry}`" for entry in bug.logs]
         if bug.stacktrace:
             out += ["", "### Stacktrace", "```", bug.stacktrace.strip(), "```"]
         return out
@@ -102,16 +103,25 @@ class BugExporter:
             f"<tr><th>{escape(k)}</th><td>{escape(str(v))}</td></tr>"
             for k, v in [
                 ("Category", bug.category + (f" / {bug.subcategory}" if bug.subcategory else "")),
-                ("Severity", bug.severity), ("Priority", bug.priority),
-                ("Risk", bug.risk or "n/a"), ("Confidence", f"{bug.confidence}%"),
-                ("Owner", bug.owner), ("Environment", bug.environment or "n/a"),
-                ("Framework", bug.framework or "n/a"), ("Browser", bug.browser or "n/a"),
-                ("OS", bug.os or "n/a"), ("Python", bug.python_version or "n/a"),
-                ("Build", bug.build or "n/a"), ("Commit", bug.commit or "n/a"),
+                ("Severity", bug.severity),
+                ("Priority", bug.priority),
+                ("Risk", bug.risk or "n/a"),
+                ("Confidence", f"{bug.confidence}%"),
+                ("Owner", bug.owner),
+                ("Environment", bug.environment or "n/a"),
+                ("Framework", bug.framework or "n/a"),
+                ("Browser", bug.browser or "n/a"),
+                ("OS", bug.os or "n/a"),
+                ("Python", bug.python_version or "n/a"),
+                ("Build", bug.build or "n/a"),
+                ("Commit", bug.commit or "n/a"),
             ]
         )
-        stack = (f"<h2>Stacktrace</h2><pre>{escape(bug.stacktrace.strip())}</pre>"
-                 if bug.stacktrace else "")
+        stack = (
+            f"<h2>Stacktrace</h2><pre>{escape(bug.stacktrace.strip())}</pre>"
+            if bug.stacktrace
+            else ""
+        )
         return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><title>{escape(bug.title)}</title>
 <style>
@@ -156,8 +166,9 @@ class BugExporter:
 
     @staticmethod
     def _jira_priority(priority: str) -> str:
-        return {"P0": "Highest", "P1": "High", "P2": "Medium",
-                "P3": "Low", "P4": "Lowest"}.get(priority, "Medium")
+        return {"P0": "Highest", "P1": "High", "P2": "Medium", "P3": "Low", "P4": "Lowest"}.get(
+            priority, "Medium"
+        )
 
     def to_jira_json(self, bug: BugReport) -> str:
         return json.dumps(self.to_jira(bug), indent=2, ensure_ascii=False)
@@ -183,9 +194,13 @@ class BugExporter:
 
     @staticmethod
     def _azure_severity(severity: str) -> str:
-        return {"Blocker": "1 - Critical", "Critical": "1 - Critical",
-                "Major": "2 - High", "Minor": "3 - Medium",
-                "Trivial": "4 - Low"}.get(severity, "2 - High")
+        return {
+            "Blocker": "1 - Critical",
+            "Critical": "1 - Critical",
+            "Major": "2 - High",
+            "Minor": "3 - Medium",
+            "Trivial": "4 - Low",
+        }.get(severity, "2 - High")
 
     def to_azure_json(self, bug: BugReport) -> str:
         return json.dumps(self.to_azure(bug), indent=2, ensure_ascii=False)

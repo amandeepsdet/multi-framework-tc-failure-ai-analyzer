@@ -9,7 +9,8 @@ the CLI, the interactive chat, and (later) an MCP server without change.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from qa_ai_engine._logging import get_logger
 
@@ -37,7 +38,9 @@ class BaseTool(ABC):
 class _FnTool(BaseTool):
     """Adapter turning a bound method into a tool (keeps wiring concise)."""
 
-    def __init__(self, name: str, fn: Callable[..., Any], description: str, examples: list[str]) -> None:
+    def __init__(
+        self, name: str, fn: Callable[..., Any], description: str, examples: list[str]
+    ) -> None:
         self.name = name
         self._fn = fn
         self._description = description

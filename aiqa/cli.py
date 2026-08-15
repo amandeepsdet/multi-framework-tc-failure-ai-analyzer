@@ -107,7 +107,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_classify.add_argument("--json", action="store_true", help="Emit JSON.")
     p_classify.set_defaults(func=_cmd_classify)
 
-    p_explain = sub.add_parser("explain-failure", help="Analyze a failure with AI confidence reasoning.")
+    p_explain = sub.add_parser(
+        "explain-failure", help="Analyze a failure with AI confidence reasoning."
+    )
     p_explain.add_argument("context", help="Path to a FailureContext JSON file.")
     p_explain.add_argument("--json", action="store_true", help="Emit JSON.")
     p_explain.set_defaults(func=_cmd_explain)
@@ -116,15 +118,23 @@ def build_parser() -> argparse.ArgumentParser:
     p_heal.add_argument("--old", required=True, help="The broken locator.")
     p_heal.add_argument("--dom", help="Path to an HTML/DOM snapshot file.")
     p_heal.add_argument("--text", help="Visible text of the target element.")
-    p_heal.add_argument("--attr", action="append", metavar="NAME=VALUE",
-                        help="Known attribute of the target element (repeatable).")
+    p_heal.add_argument(
+        "--attr",
+        action="append",
+        metavar="NAME=VALUE",
+        help="Known attribute of the target element (repeatable).",
+    )
     p_heal.add_argument("--json", action="store_true", help="Emit JSON.")
     p_heal.set_defaults(func=_cmd_heal)
 
     p_bug = sub.add_parser("generate-bug", help="Generate a professional bug report.")
     p_bug.add_argument("context", help="Path to a FailureContext JSON file.")
-    p_bug.add_argument("--format", choices=["md", "html", "json", "txt", "jira", "azure", "github", "linear"],
-                       default="md", help="Output format (ignored when --out is given).")
+    p_bug.add_argument(
+        "--format",
+        choices=["md", "html", "json", "txt", "jira", "azure", "github", "linear"],
+        default="md",
+        help="Output format (ignored when --out is given).",
+    )
     p_bug.add_argument("--out", help="Write all tracker formats to this directory.")
     p_bug.set_defaults(func=_cmd_bug)
 

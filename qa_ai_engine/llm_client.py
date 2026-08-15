@@ -18,7 +18,6 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 
 logger = get_logger("ai.llm_client")

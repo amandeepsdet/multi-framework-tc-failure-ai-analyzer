@@ -27,20 +27,23 @@ jobs:
       - name: Install package (with dev tooling)
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e ".[dev]"
           # Runtime deps for the shared demo conftest (Playwright/requests/etc.).
           # Only the Python packages are needed to import it; the offline SDK + AI
           # tests never launch a browser, so no `playwright install` is required.
           pip install -r requirements.txt
-          pip install ruff black
 
       - name: Lint (ruff)
-        run: ruff check aiqa
-        continue-on-error: true
+        run: ruff check .
 
       - name: Format check (black)
-        run: black --check aiqa
-        continue-on-error: true
+        run: black --check .
 
-      - name: Run offline SDK + AI tests
-        run: pytest tests/aiqa tests/ai tests/action -m "sdk or ai" -o addopts="" -q
+      - name: Type check (mypy)
+        run: mypy aiqa
+
+      - name: Run offline SDK + AI + Action tests (with coverage)
+        run: >-
+          pytest tests/aiqa tests/ai tests/action
+          -m "sdk or ai or action" -o addopts="" -q
+          --cov=aiqa --cov=qa_ai_engine --cov-report=term-missing

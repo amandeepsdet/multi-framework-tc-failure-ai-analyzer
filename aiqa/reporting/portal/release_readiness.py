@@ -44,14 +44,20 @@ class ReleaseReadinessEngine:
         if security > 0:
             blockers.append(f"{security} security-related failure(s) present")
         if pass_rate < self.MIN_PASS_RATE_RISK:
-            blockers.append(f"Pass rate {pass_rate:.0f}% is below the {self.MIN_PASS_RATE_RISK:.0f}% floor")
+            blockers.append(
+                f"Pass rate {pass_rate:.0f}% is below the {self.MIN_PASS_RATE_RISK:.0f}% floor"
+            )
 
         if regressions > 0:
             risks.append(f"{regressions} regression(s) versus the previous run")
         if pass_rate < self.MIN_PASS_RATE_READY:
-            risks.append(f"Pass rate {pass_rate:.0f}% is below the {self.MIN_PASS_RATE_READY:.0f}% release target")
+            risks.append(
+                f"Pass rate {pass_rate:.0f}% is below the {self.MIN_PASS_RATE_READY:.0f}% release target"
+            )
         if quality_score < self.MIN_QUALITY_READY:
-            risks.append(f"Quality score {quality_score} is below the target of {self.MIN_QUALITY_READY}")
+            risks.append(
+                f"Quality score {quality_score} is below the target of {self.MIN_QUALITY_READY}"
+            )
 
         if blockers:
             status = NOT_READY
@@ -60,7 +66,9 @@ class ReleaseReadinessEngine:
         elif risks:
             status = AT_RISK
             reasons = risks
-            recommendation = "Release only with sign-off. Investigate risks and confirm no new regressions."
+            recommendation = (
+                "Release only with sign-off. Investigate risks and confirm no new regressions."
+            )
         else:
             status = READY
             reasons = ["No critical or security failures; pass rate and quality targets met."]

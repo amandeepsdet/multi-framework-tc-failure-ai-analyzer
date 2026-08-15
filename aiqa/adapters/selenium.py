@@ -78,7 +78,9 @@ class SeleniumAdapter(FrameworkAdapter):
             entries = driver.get_log("browser")
             builder.with_console(
                 [
-                    ConsoleMessage(level=str(e.get("level", "log")).lower(), text=e.get("message", ""))
+                    ConsoleMessage(
+                        level=str(e.get("level", "log")).lower(), text=e.get("message", "")
+                    )
                     for e in entries
                 ]
             )

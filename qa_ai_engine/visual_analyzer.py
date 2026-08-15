@@ -14,7 +14,6 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 from .llm_client import BaseLLMClient, extract_json, get_llm_client
 from .prompt_builder import PromptBuilder
@@ -51,16 +50,18 @@ class VisualAnalyzer:
 
     def available(self) -> bool:
         return bool(
-            self.cfg.vision_enabled
-            and self.llm.is_available()
-            and self.llm.supports_vision()
+            self.cfg.vision_enabled and self.llm.is_available() and self.llm.supports_vision()
         )
 
     def analyze(self, screenshot_path: str | None) -> VisualFindings:
         if not self.available():
-            return VisualFindings(available=False, summary="Vision analysis disabled or unsupported.")
+            return VisualFindings(
+                available=False, summary="Vision analysis disabled or unsupported."
+            )
         if not screenshot_path or not os.path.exists(screenshot_path):
-            return VisualFindings(available=False, summary="No screenshot available for vision analysis.")
+            return VisualFindings(
+                available=False, summary="No screenshot available for vision analysis."
+            )
         try:
             prompt = self.prompts.load_template("visual_analysis")
             raw = self.llm.complete_vision(prompt, screenshot_path)

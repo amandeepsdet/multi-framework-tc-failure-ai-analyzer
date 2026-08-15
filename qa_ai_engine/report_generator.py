@@ -12,13 +12,12 @@ import json
 import os
 import platform
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib import metadata as _metadata
 from pathlib import Path
 from typing import Any
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 from .models import AnalysisResult, FailureRecord
 from .trend_analyzer import ReleaseReadiness, TrendReport
@@ -441,19 +440,21 @@ class ReportGenerator:
         # ---- header chips
         exec_time = f"{m.execution_time_s:.2f}s" if m.execution_time_s is not None else ""
         commit = (m.git_commit or "")[:10]
-        chips = "".join([
-            chip("robot", "Test", r.test_name),
-            chip("tag", "Category", a.category.value),
-            chip("clock", "Time", exec_time),
-            chip("chip", "Framework", m.framework_version),
-            chip("network", "Browser", m.browser),
-            chip("shield", "Env", m.environment),
-            chip("terminal", "OS", m.os),
-            chip("code", "Python", m.python_version),
-            chip("git", "Commit", commit),
-            chip("doc", "Package", f"v{pkg}"),
-            chip("history", "Timestamp", (r.timestamp or "").replace("T", " ")[:19]),
-        ])
+        chips = "".join(
+            [
+                chip("robot", "Test", r.test_name),
+                chip("tag", "Category", a.category.value),
+                chip("clock", "Time", exec_time),
+                chip("chip", "Framework", m.framework_version),
+                chip("network", "Browser", m.browser),
+                chip("shield", "Env", m.environment),
+                chip("terminal", "OS", m.os),
+                chip("code", "Python", m.python_version),
+                chip("git", "Commit", commit),
+                chip("doc", "Package", f"v{pkg}"),
+                chip("history", "Timestamp", (r.timestamp or "").replace("T", " ")[:19]),
+            ]
+        )
 
         # ---- KPI cards
         def kpi(icon_key: str, label: str, value: str, desc: str, color: str) -> str:
@@ -464,14 +465,18 @@ class ReportGenerator:
                 f"<div class='k-desc'>{esc(desc)}</div></div>"
             )
 
-        kpis = "".join([
-            kpi("warning", "Criticality", sev_label, f"Severity: {sev} · {priority}", sev_color),
-            kpi("gauge", "Confidence", f"{conf}%", "Model certainty", conf_color),
-            kpi("tag", "Category", a.category.value, "Root-cause class", "#8250df"),
-            kpi("user", "Owner Team", a.owner or "Unassigned", "Suggested routing", "#0969da"),
-            kpi("brain", "Analysed By", a.source, "Analysis engine", "#1a7f37"),
-            kpi("search", "Evidence", str(len(a.evidence)), "Signals collected", "#bc4c00"),
-        ])
+        kpis = "".join(
+            [
+                kpi(
+                    "warning", "Criticality", sev_label, f"Severity: {sev} · {priority}", sev_color
+                ),
+                kpi("gauge", "Confidence", f"{conf}%", "Model certainty", conf_color),
+                kpi("tag", "Category", a.category.value, "Root-cause class", "#8250df"),
+                kpi("user", "Owner Team", a.owner or "Unassigned", "Suggested routing", "#0969da"),
+                kpi("brain", "Analysed By", a.source, "Analysis engine", "#1a7f37"),
+                kpi("search", "Evidence", str(len(a.evidence)), "Signals collected", "#bc4c00"),
+            ]
+        )
 
         # ---- confidence ring
         ring = (
@@ -483,19 +488,26 @@ class ReportGenerator:
             f"<div class='num' style='color:{conf_color}'>{conf}%<small>CONFIDENCE</small></div></div>"
         )
 
-        rc_badges = "".join([
-            f"<span class='pill' style='background:{sev_bg};color:{sev_color};border-color:{sev_color}'>{ic['warning']}{esc(sev_label)} · {esc(sev)}</span>",
-            f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['tag']}{esc(a.category.value)}</span>",
-            f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['user']}{esc(a.owner or 'Unassigned')}</span>",
-            f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['brain']}{esc(a.source)}</span>",
-        ])
+        rc_badges = "".join(
+            [
+                f"<span class='pill' style='background:{sev_bg};color:{sev_color};border-color:{sev_color}'>{ic['warning']}{esc(sev_label)} · {esc(sev)}</span>",
+                f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['tag']}{esc(a.category.value)}</span>",
+                f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['user']}{esc(a.owner or 'Unassigned')}</span>",
+                f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['brain']}{esc(a.source)}</span>",
+            ]
+        )
         root_cause = (
-            "<section><h2 class='sec-h'><span class='si'>" + ic["warning"] + "</span>Root Cause</h2>"
+            "<section><h2 class='sec-h'><span class='si'>"
+            + ic["warning"]
+            + "</span>Root Cause</h2>"
             f"<div class='card rc' style='--sev:{sev_color}'>{ring}"
             "<div class='rc-body'><h2>" + esc(a.root_cause or "Root cause not determined") + "</h2>"
             f"<p>{esc(a.reasoning)}</p><div class='rc-badges'>{rc_badges}</div>"
-            "<div class='rc-fix'>" + ic["bulb"] + "<span><b>Suggested fix:</b> "
-            + esc(a.recommended_fix or "n/a") + "</span></div>"
+            "<div class='rc-fix'>"
+            + ic["bulb"]
+            + "<span><b>Suggested fix:</b> "
+            + esc(a.recommended_fix or "n/a")
+            + "</span></div>"
             "</div></div></section>"
         )
 
@@ -511,9 +523,11 @@ class ReportGenerator:
 
         ev_cards: list[str] = []
         if a.evidence:
-            body = "<ul style='margin:6px 0 0;padding-left:18px'>" + "".join(
-                f"<li>{esc(str(x))}</li>" for x in a.evidence
-            ) + "</ul>"
+            body = (
+                "<ul style='margin:6px 0 0;padding-left:18px'>"
+                + "".join(f"<li>{esc(str(x))}</li>" for x in a.evidence)
+                + "</ul>"
+            )
             ev_cards.append(acc("brain", "AI Evidence Signals", str(len(a.evidence)), body, True))
         if ev.exception_type or ev.exception_message:
             body = code_block(f"{ev.exception_type}: {ev.exception_message}".strip(": "))
@@ -525,33 +539,55 @@ class ReportGenerator:
         if ev.network:
             rows = "".join(
                 "<tr><td class='mono'>" + esc(str(n.get("method", ""))) + "</td>"
-                "<td class='mono' style='word-break:break-all'>" + esc(str(n.get("url", ""))) + "</td>"
+                "<td class='mono' style='word-break:break-all'>"
+                + esc(str(n.get("url", "")))
+                + "</td>"
                 "<td class='mono'>" + esc(str(n.get("status", ""))) + "</td>"
-                "<td class='mono'>" + (f"{n.get('duration_ms')}ms" if n.get("duration_ms") is not None else "") + "</td></tr>"
+                "<td class='mono'>"
+                + (f"{n.get('duration_ms')}ms" if n.get("duration_ms") is not None else "")
+                + "</td></tr>"
                 for n in ev.network
             )
             body = (
                 "<div class='tbl-wrap'><table class='data'><thead><tr><th>Method</th>"
                 "<th>URL</th><th>Status</th><th>Duration</th></tr></thead><tbody>"
-                + rows + "</tbody></table></div>"
+                + rows
+                + "</tbody></table></div>"
             )
             ev_cards.append(acc("network", "Network Requests", str(len(ev.network)), body))
         if ev.api_responses:
-            ev_cards.append(acc("network", "API Responses", str(len(ev.api_responses)),
-                               code_block(json.dumps(ev.api_responses, indent=2, ensure_ascii=False), "360px")))
+            ev_cards.append(
+                acc(
+                    "network",
+                    "API Responses",
+                    str(len(ev.api_responses)),
+                    code_block(json.dumps(ev.api_responses, indent=2, ensure_ascii=False), "360px"),
+                )
+            )
         if ev.console_logs:
-            ev_cards.append(acc("terminal", "Console Logs", str(len(ev.console_logs)),
-                               code_block(json.dumps(ev.console_logs, indent=2, ensure_ascii=False), "300px")))
+            ev_cards.append(
+                acc(
+                    "terminal",
+                    "Console Logs",
+                    str(len(ev.console_logs)),
+                    code_block(json.dumps(ev.console_logs, indent=2, ensure_ascii=False), "300px"),
+                )
+            )
         if ev.dom:
             dom = ev.dom if len(ev.dom) <= 6000 else ev.dom[:6000] + "\n… (truncated)"
-            ev_cards.append(acc("code", "DOM Snapshot", f"{len(ev.dom)} chars", code_block(dom, "360px")))
+            ev_cards.append(
+                acc("code", "DOM Snapshot", f"{len(ev.dom)} chars", code_block(dom, "360px"))
+            )
         if not ev_cards:
-            ev_cards.append("<div class='empty'>No raw evidence signals were captured for this failure.</div>")
+            ev_cards.append(
+                "<div class='empty'>No raw evidence signals were captured for this failure.</div>"
+            )
 
         evidence_sec = (
             "<section><h2 class='sec-h'><span class='si'>" + ic["search"] + "</span>Evidence</h2>"
-            "<div class='searchbar'>" + ic["search"] +
-            "<input id='searchEv' type='search' placeholder='Search evidence…' "
+            "<div class='searchbar'>"
+            + ic["search"]
+            + "<input id='searchEv' type='search' placeholder='Search evidence…' "
             "data-empty='#evEmpty' aria-label='Search evidence'></div>"
             + "".join(ev_cards)
             + "<div id='evEmpty' class='empty' style='display:none'>No evidence matches your search.</div></section>"
@@ -562,8 +598,12 @@ class ReportGenerator:
         if ev.screenshot:
             src = esc(ev.screenshot)
             screenshots_sec = (
-                "<section><h2 class='sec-h'><span class='si'>" + ic["camera"] + "</span>Screenshots</h2>"
-                "<div class='shots'><div class='shot' data-shot='" + src + "' tabindex='0' role='button' "
+                "<section><h2 class='sec-h'><span class='si'>"
+                + ic["camera"]
+                + "</span>Screenshots</h2>"
+                "<div class='shots'><div class='shot' data-shot='"
+                + src
+                + "' tabindex='0' role='button' "
                 "aria-label='Open screenshot'><img src='" + src + "' alt='Failure screenshot' "
                 "onerror=\"this.closest('.shot').style.display='none'\">"
                 "<div class='cap'>Failure screenshot — click to enlarge</div></div></div></section>"
@@ -582,7 +622,8 @@ class ReportGenerator:
         }
         why = (
             f"Directly targets the {a.category.value.lower()} root cause: {a.root_cause}"
-            if a.root_cause else f"Directly targets the {a.category.value.lower()} failure class."
+            if a.root_cause
+            else f"Directly targets the {a.category.value.lower()} failure class."
         )
         prevent = f"Add a regression guard for this {a.category.value} scenario and alert when similar signals recur in future runs."
         best = _best_practice.get(
@@ -590,10 +631,15 @@ class ReportGenerator:
             "Add a targeted regression test and monitor recurrence via the failure-history store.",
         )
         fix_sec = (
-            "<section><h2 class='sec-h'><span class='si'>" + ic["bulb"] + "</span>Suggested Fix</h2>"
-            "<div class='card rec'><div class='rec-head'><span class='rec-ic'>" + ic["bulb"] + "</span>"
+            "<section><h2 class='sec-h'><span class='si'>"
+            + ic["bulb"]
+            + "</span>Suggested Fix</h2>"
+            "<div class='card rec'><div class='rec-head'><span class='rec-ic'>"
+            + ic["bulb"]
+            + "</span>"
             "<div><h3>Recommended Fix</h3><p class='rec-primary'>"
-            + esc(a.recommended_fix or "No specific fix recommended.") + "</p></div></div>"
+            + esc(a.recommended_fix or "No specific fix recommended.")
+            + "</p></div></div>"
             "<div class='rec-grid'>"
             "<div><b>Why this works</b><p>" + esc(why) + "</p></div>"
             "<div><b>Preventive actions</b><p>" + esc(prevent) + "</p></div>"
@@ -608,8 +654,19 @@ class ReportGenerator:
         bug_title = f"[{sev_label}] {r.test_name} — {a.category.value}"
         bug_steps = [f"Execute test: {r.test_name}", "Observe the reported failure below"]
         bug_env = m.environment or ""
-        bug_env_parts = [p for p in [m.browser, m.os, m.framework_version, (f"Python {m.python_version}" if m.python_version else "")] if p]
-        bug_env_full = (bug_env + (" · " if bug_env and bug_env_parts else "") + " · ".join(bug_env_parts)).strip(" ·")
+        bug_env_parts = [
+            p
+            for p in [
+                m.browser,
+                m.os,
+                m.framework_version,
+                (f"Python {m.python_version}" if m.python_version else ""),
+            ]
+            if p
+        ]
+        bug_env_full = (
+            bug_env + (" · " if bug_env and bug_env_parts else "") + " · ".join(bug_env_parts)
+        ).strip(" ·")
         bug_grid = (
             "<table class='kv'>"
             f"<tr><td>Title</td><td><b>{esc(bug_title)}</b></td></tr>"
@@ -621,14 +678,19 @@ class ReportGenerator:
             f"<tr><td>Description</td><td>{esc(a.root_cause or r.failure)}</td></tr>"
             f"<tr><td>Expected</td><td>Test completes successfully with no errors.</td></tr>"
             f"<tr><td>Actual</td><td>{esc(actual)}</td></tr>"
-            f"<tr><td>Steps</td><td>" + "<br>".join(f"{i+1}. {esc(s)}" for i, s in enumerate(bug_steps)) + "</td></tr>"
+            f"<tr><td>Steps</td><td>"
+            + "<br>".join(f"{i+1}. {esc(s)}" for i, s in enumerate(bug_steps))
+            + "</td></tr>"
             f"<tr><td>Suggested Fix</td><td>{esc(a.recommended_fix)}</td></tr>"
             "</table>"
         )
         bug_sec = (
             "<section><h2 class='sec-h'><span class='si'>" + ic["bug"] + "</span>Bug Report"
-            "<button class='btn' data-action='bug' type='button' style='margin-left:auto'>" + ic["copy"] +
-            "Copy Bug Report</button></h2><div class='card'>" + bug_grid + "</div></section>"
+            "<button class='btn' data-action='bug' type='button' style='margin-left:auto'>"
+            + ic["copy"]
+            + "Copy Bug Report</button></h2><div class='card'>"
+            + bug_grid
+            + "</div></section>"
         )
 
         # ---- similar failures table
@@ -650,24 +712,43 @@ class ReportGenerator:
         similar_sec = ""
         if a.similar_failures:
             similar_sec = (
-                "<section><h2 class='sec-h'><span class='si'>" + ic["history"] + "</span>Similar Failures</h2>"
-                "<div class='searchbar'>" + ic["search"] +
-                "<input id='searchSim' type='search' placeholder='Search similar failures…' aria-label='Search similar failures'></div>"
+                "<section><h2 class='sec-h'><span class='si'>"
+                + ic["history"]
+                + "</span>Similar Failures</h2>"
+                "<div class='searchbar'>"
+                + ic["search"]
+                + "<input id='searchSim' type='search' placeholder='Search similar failures…' aria-label='Search similar failures'></div>"
                 "<div class='tbl-wrap'><table class='data'><thead><tr><th>Test</th><th>Similarity</th>"
                 "<th>Category</th><th>Confidence</th></tr></thead><tbody id='simBody'>"
-                + sim_rows + "</tbody></table></div></section>"
+                + sim_rows
+                + "</tbody></table></div></section>"
             )
 
         # ---- timeline
         tl_time = (r.timestamp or "").replace("T", " ")[:19]
         timeline_sec = (
-            "<section><h2 class='sec-h'><span class='si'>" + ic["flow"] + "</span>Failure Timeline</h2>"
+            "<section><h2 class='sec-h'><span class='si'>"
+            + ic["flow"]
+            + "</span>Failure Timeline</h2>"
             "<div class='card timeline'>"
-            "<div class='tl'><span class='dot'></span><div><h4>Test Started</h4><p>" + esc(r.test_name) + "</p></div></div>"
-            "<div class='tl'><span class='dot'></span><div><h4>Execution</h4><p>" + esc(m.environment or "Test steps executed") + (f" · {exec_time}" if exec_time else "") + "</p></div></div>"
-            "<div class='tl fail'><span class='dot'></span><div><h4>Failure Detected</h4><p>" + esc((ev.exception_type + ": " if ev.exception_type else "") + (actual or "")) + "</p></div></div>"
-            "<div class='tl ai'><span class='dot'></span><div><h4>AI Analysis</h4><p>" + esc(a.category.value) + f" · {conf}% confidence · via " + esc(a.source) + "</p></div></div>"
-            "<div class='tl done'><span class='dot'></span><div><h4>Report Generated</h4><p>" + esc(tl_time or "just now") + "</p></div></div>"
+            "<div class='tl'><span class='dot'></span><div><h4>Test Started</h4><p>"
+            + esc(r.test_name)
+            + "</p></div></div>"
+            "<div class='tl'><span class='dot'></span><div><h4>Execution</h4><p>"
+            + esc(m.environment or "Test steps executed")
+            + (f" · {exec_time}" if exec_time else "")
+            + "</p></div></div>"
+            "<div class='tl fail'><span class='dot'></span><div><h4>Failure Detected</h4><p>"
+            + esc((ev.exception_type + ": " if ev.exception_type else "") + (actual or ""))
+            + "</p></div></div>"
+            "<div class='tl ai'><span class='dot'></span><div><h4>AI Analysis</h4><p>"
+            + esc(a.category.value)
+            + f" · {conf}% confidence · via "
+            + esc(a.source)
+            + "</p></div></div>"
+            "<div class='tl done'><span class='dot'></span><div><h4>Report Generated</h4><p>"
+            + esc(tl_time or "just now")
+            + "</p></div></div>"
             "</div></section>"
         )
 
@@ -679,22 +760,41 @@ class ReportGenerator:
             "Signals": len(a.evidence),
         }
         ev_counts = {k: v for k, v in ev_counts.items() if v}
-        bar_chart = json.dumps({
-            "type": "bar",
-            "data": {"labels": list(ev_counts.keys()) or ["Signals"],
-                     "datasets": [{"label": "Evidence", "data": list(ev_counts.values()) or [len(a.evidence)],
-                                   "backgroundColor": ["#4c9be8", "#8b7ff0", "#3fb6a8", "#f0a35e"],
-                                   "borderRadius": 8, "maxBarThickness": 46}]},
-            "options": {"plugins": {"legend": {"display": False}}},
-        })
-        conf_chart = json.dumps({
-            "type": "doughnut",
-            "data": {"labels": ["Confidence", "Uncertainty"],
-                     "datasets": [{"data": [conf, 100 - conf],
-                                   "backgroundColor": [conf_color, "rgba(140,148,158,.18)"],
-                                   "borderWidth": 0, "hoverOffset": 4}]},
-            "options": {"cutout": "74%"},
-        })
+        bar_chart = json.dumps(
+            {
+                "type": "bar",
+                "data": {
+                    "labels": list(ev_counts.keys()) or ["Signals"],
+                    "datasets": [
+                        {
+                            "label": "Evidence",
+                            "data": list(ev_counts.values()) or [len(a.evidence)],
+                            "backgroundColor": ["#4c9be8", "#8b7ff0", "#3fb6a8", "#f0a35e"],
+                            "borderRadius": 8,
+                            "maxBarThickness": 46,
+                        }
+                    ],
+                },
+                "options": {"plugins": {"legend": {"display": False}}},
+            }
+        )
+        conf_chart = json.dumps(
+            {
+                "type": "doughnut",
+                "data": {
+                    "labels": ["Confidence", "Uncertainty"],
+                    "datasets": [
+                        {
+                            "data": [conf, 100 - conf],
+                            "backgroundColor": [conf_color, "rgba(140,148,158,.18)"],
+                            "borderWidth": 0,
+                            "hoverOffset": 4,
+                        }
+                    ],
+                },
+                "options": {"cutout": "74%"},
+            }
+        )
         stats_rows = (
             f"<tr><td>Severity</td><td><b style='color:{sev_color}'>{esc(sev_label)}</b> · {esc(sev)}</td></tr>"
             f"<tr><td>Priority</td><td>{esc(priority)}</td></tr>"
@@ -703,14 +803,27 @@ class ReportGenerator:
             f"<tr><td>Similar failures</td><td>{len(a.similar_failures)}</td></tr>"
         )
         charts_sec = (
-            "<section data-chartsec><h2 class='sec-h'><span class='si'>" + ic["gauge"] + "</span>Insights</h2>"
+            "<section data-chartsec><h2 class='sec-h'><span class='si'>"
+            + ic["gauge"]
+            + "</span>Insights</h2>"
             "<div class='kpis'>"
-            "<div class='card' style='border-left:4px solid #4c9be8'><div class='k-top'>" + ic["search"] +
-            "Evidence Distribution</div><div class='chartbox'><canvas data-chart='" + esc(bar_chart) + "'></canvas></div></div>"
-            "<div class='card' style='border-left:4px solid " + conf_color + "'><div class='k-top'>" + ic["gauge"] +
-            "Confidence Gauge</div><div class='chartbox'><canvas data-chart='" + esc(conf_chart) + "'></canvas></div></div>"
-            "<div class='card' style='border-left:4px solid #8250df'><div class='k-top'>" + ic["tag"] +
-            "Summary</div><table class='kv' style='margin-top:6px'>" + stats_rows + "</table></div>"
+            "<div class='card' style='border-left:4px solid #4c9be8'><div class='k-top'>"
+            + ic["search"]
+            + "Evidence Distribution</div><div class='chartbox'><canvas data-chart='"
+            + esc(bar_chart)
+            + "'></canvas></div></div>"
+            "<div class='card' style='border-left:4px solid "
+            + conf_color
+            + "'><div class='k-top'>"
+            + ic["gauge"]
+            + "Confidence Gauge</div><div class='chartbox'><canvas data-chart='"
+            + esc(conf_chart)
+            + "'></canvas></div></div>"
+            "<div class='card' style='border-left:4px solid #8250df'><div class='k-top'>"
+            + ic["tag"]
+            + "Summary</div><table class='kv' style='margin-top:6px'>"
+            + stats_rows
+            + "</table></div>"
             "</div></section>"
         )
 
@@ -722,7 +835,9 @@ class ReportGenerator:
 
         sidebar = (
             "<aside class='side'>"
-            "<div class='card'><h3>" + ic["chip"] + "Execution Metadata</h3>"
+            "<div class='card'><h3>"
+            + ic["chip"]
+            + "Execution Metadata</h3>"
             + mrow("Framework", m.framework_version)
             + mrow("Browser", m.browser)
             + mrow("Environment", m.environment)
@@ -744,17 +859,23 @@ class ReportGenerator:
             "record": r.to_dict(),
             "analysis": a.to_dict(),
             "markdown": self.to_markdown(r, a),
-            "bugReport": self._bug_markdown(bug_title, a, r, actual, bug_env_full, priority, sev_label, bug_steps),
+            "bugReport": self._bug_markdown(
+                bug_title, a, r, actual, bug_env_full, priority, sev_label, bug_steps
+            ),
             "stem": f"{stem}_analysis",
         }
         data_json = json.dumps(data_payload, ensure_ascii=False).replace("<", "\\u003c")
 
         toolbar = (
             "<div class='toolbar'>"
-            "<button class='btn' data-action='html' type='button'>" + ic["download"] + "HTML</button>"
+            "<button class='btn' data-action='html' type='button'>"
+            + ic["download"]
+            + "HTML</button>"
             "<button class='btn' data-action='json' type='button'>" + ic["code"] + "JSON</button>"
             "<button class='btn' data-action='md' type='button'>" + ic["doc"] + "Markdown</button>"
-            "<button class='btn' data-action='print' type='button'>" + ic["print"] + "Print</button>"
+            "<button class='btn' data-action='print' type='button'>"
+            + ic["print"]
+            + "Print</button>"
             "<button class='btn icon theme-t' id='themeBtn' data-action='theme' type='button' "
             "aria-label='Toggle theme'>" + ic["moon"] + "</button>"
             "</div>"
@@ -762,7 +883,9 @@ class ReportGenerator:
 
         header = (
             "<header class='top'><div class='top-in'><div class='top-row'>"
-            "<div class='brand'><span class='ic'>" + ic["robot"] + "</span>AI Failure Analysis</div>"
+            "<div class='brand'><span class='ic'>"
+            + ic["robot"]
+            + "</span>AI Failure Analysis</div>"
             "<span class='badge fail'>" + ic["warning"] + "FAILED</span>"
             "<div class='spacer'></div>" + toolbar + "</div>"
             f"<div class='chips'>{chips}</div></div></header>"
@@ -770,17 +893,34 @@ class ReportGenerator:
 
         body = (
             "<div class='wrap'>"
-            "<section><div class='kpis'>" + kpis + "</div></section>"
+            "<section><div class='kpis'>"
+            + kpis
+            + "</div></section>"
             + root_cause
             + charts_sec
             + "<div class='grid'><div>"
-            + evidence_sec + screenshots_sec + fix_sec + bug_sec + similar_sec + timeline_sec
-            + "</div>" + sidebar + "</div>"
-            "<footer><div class='fl'>" + ic["robot"] +
-            "Generated by <b>&nbsp;multi-framework-tc-failure-ai-analyzer</b>&nbsp;· v" + esc(pkg) +
-            "&nbsp;· " + esc(tl_time) + "</div><div class='fl'>"
-            "<a href='https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer' target='_blank' rel='noopener'>" + ic["git"] + "GitHub</a>"
-            "<a href='https://pypi.org/project/multi-framework-tc-failure-ai-analyzer/' target='_blank' rel='noopener'>" + ic["doc"] + "PyPI</a>"
+            + evidence_sec
+            + screenshots_sec
+            + fix_sec
+            + bug_sec
+            + similar_sec
+            + timeline_sec
+            + "</div>"
+            + sidebar
+            + "</div>"
+            "<footer><div class='fl'>"
+            + ic["robot"]
+            + "Generated by <b>&nbsp;multi-framework-tc-failure-ai-analyzer</b>&nbsp;· v"
+            + esc(pkg)
+            + "&nbsp;· "
+            + esc(tl_time)
+            + "</div><div class='fl'>"
+            "<a href='https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer' target='_blank' rel='noopener'>"
+            + ic["git"]
+            + "GitHub</a>"
+            "<a href='https://pypi.org/project/multi-framework-tc-failure-ai-analyzer/' target='_blank' rel='noopener'>"
+            + ic["doc"]
+            + "PyPI</a>"
             "</div></footer></div>"
         )
 
@@ -791,7 +931,8 @@ class ReportGenerator:
             "<link rel='preconnect' href='https://fonts.googleapis.com'>"
             "<link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap' rel='stylesheet'>"
             f"<style>{_REPORT_CSS}</style></head><body data-stem='{esc(stem)}_analysis'>"
-            + header + body
+            + header
+            + body
             + "<div class='modal' id='modal' role='dialog' aria-modal='true'>"
             "<button class='x' aria-label='Close'>&times;</button><img src='' alt='Screenshot'></div>"
             "<div class='toast' id='toast' role='status' aria-live='polite'></div>"
@@ -801,8 +942,14 @@ class ReportGenerator:
 
     @staticmethod
     def _bug_markdown(
-        title: str, a: AnalysisResult, r: FailureRecord, actual: str,
-        env: str, priority: str, sev_label: str, steps: list[str],
+        title: str,
+        a: AnalysisResult,
+        r: FailureRecord,
+        actual: str,
+        env: str,
+        priority: str,
+        sev_label: str,
+        steps: list[str],
     ) -> str:
         step_lines = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(steps))
         return (
@@ -845,8 +992,13 @@ class ReportGenerator:
         def _rows(items: list[dict[str, Any]], key: str, count_key: str = "count") -> str:
             return "\n".join(f"- {i.get(key)} — {i.get(count_key)}" for i in items) or "- (none)"
 
-        categories = "\n".join(f"- {k}: {v}" for k, v in trend.category_distribution.items()) or "- (none)"
-        flaky = "\n".join(f"- {f.get('test')} ({f.get('confidence')}%)" for f in trend.flaky_tests) or "- (none)"
+        categories = (
+            "\n".join(f"- {k}: {v}" for k, v in trend.category_distribution.items()) or "- (none)"
+        )
+        flaky = (
+            "\n".join(f"- {f.get('test')} ({f.get('confidence')}%)" for f in trend.flaky_tests)
+            or "- (none)"
+        )
         return (
             "# AI Quality Trend & Release Readiness\n\n"
             f"## Release Readiness\n"
@@ -866,7 +1018,9 @@ class ReportGenerator:
             + "\n"
         )
 
-    def save_trend(self, trend: TrendReport, readiness: ReleaseReadiness, stem: str = "trend") -> dict[str, Path]:
+    def save_trend(
+        self, trend: TrendReport, readiness: ReleaseReadiness, stem: str = "trend"
+    ) -> dict[str, Path]:
         self.cfg.reports_dir.mkdir(parents=True, exist_ok=True)
         variants = {
             "md": self.trend_markdown(trend, readiness),
@@ -906,7 +1060,10 @@ def _git_commit() -> str:
     try:
         out = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
-            capture_output=True, text=True, timeout=3, cwd=str(Path.cwd()),
+            capture_output=True,
+            text=True,
+            timeout=3,
+            cwd=str(Path.cwd()),
         )
         if out.returncode == 0:
             return out.stdout.strip()[:10]
@@ -1100,7 +1257,9 @@ class _ExecFailure:
 
     __slots__ = ("nodeid", "record", "analysis", "bug_markdown")
 
-    def __init__(self, nodeid: str, record: FailureRecord, analysis: AnalysisResult, bug_markdown: str = "") -> None:
+    def __init__(
+        self, nodeid: str, record: FailureRecord, analysis: AnalysisResult, bug_markdown: str = ""
+    ) -> None:
         self.nodeid = nodeid
         self.record = record
         self.analysis = analysis
@@ -1119,7 +1278,9 @@ class ExecutionReportBuilder:
     Presentation only — no new analysis is performed here.
     """
 
-    def __init__(self, cfg: AIConfig = ai_config, report_gen: "ReportGenerator | None" = None) -> None:
+    def __init__(
+        self, cfg: AIConfig = ai_config, report_gen: ReportGenerator | None = None
+    ) -> None:
         self.cfg = cfg
         self.report_gen = report_gen or ReportGenerator(cfg)
         self._reset()
@@ -1139,13 +1300,18 @@ class ExecutionReportBuilder:
 
     def begin(self, *, run_name: str = "", environment: str = "") -> None:
         self._reset()
-        self.start_ts = datetime.now(timezone.utc)
+        self.start_ts = datetime.now(UTC)
         stamp = self.start_ts.strftime("%Y-%m-%d %H:%M:%S UTC")
         self.run_name = run_name or f"Test Execution — {stamp}"
         self.env = self._collect_env(environment)
 
     def add_failure(
-        self, record: FailureRecord, analysis: AnalysisResult, *, nodeid: str = "", bug_markdown: str = ""
+        self,
+        record: FailureRecord,
+        analysis: AnalysisResult,
+        *,
+        nodeid: str = "",
+        bug_markdown: str = "",
     ) -> None:
         key = nodeid or record.test_name
         if key in self._seen:
@@ -1168,7 +1334,7 @@ class ExecutionReportBuilder:
     def finish(self) -> dict[str, Path]:
         if self._finished:
             return self._paths
-        self.finish_ts = datetime.now(timezone.utc)
+        self.finish_ts = datetime.now(UTC)
         self._finished = True
         self._paths = self._render()
         return self._paths
@@ -1182,7 +1348,10 @@ class ExecutionReportBuilder:
     def _collect_env(environment: str) -> dict[str, str]:
         return {
             "framework": "multi-framework-tc-failure-ai-analyzer",
-            "environment": environment or os.getenv("TEST_ENV", "") or os.getenv("ENVIRONMENT", "") or "local",
+            "environment": environment
+            or os.getenv("TEST_ENV", "")
+            or os.getenv("ENVIRONMENT", "")
+            or "local",
             "os": platform.platform(),
             "python": platform.python_version(),
             "package": _package_version(),
@@ -1234,7 +1403,9 @@ class ExecutionReportBuilder:
 
     @staticmethod
     def _slug(text: str, n: int = 60) -> str:
-        return ("".join(c if c.isalnum() else "_" for c in (text or "test")).strip("_"))[:n] or "test"
+        return ("".join(c if c.isalnum() else "_" for c in (text or "test")).strip("_"))[
+            :n
+        ] or "test"
 
     # -------------------------------------------------------------- render
     def _render(self) -> dict[str, Path]:
@@ -1263,7 +1434,7 @@ class ExecutionReportBuilder:
 
     def _render_markdown(self) -> str:
         c = self._counts()
-        gen = (self.finish_ts or datetime.now(timezone.utc)).strftime("%Y-%m-%d %H:%M:%S UTC")
+        gen = (self.finish_ts or datetime.now(UTC)).strftime("%Y-%m-%d %H:%M:%S UTC")
         lines = [
             f"# AI Failure Analysis — {self.run_name}",
             "",
@@ -1291,8 +1462,10 @@ class ExecutionReportBuilder:
         lines.append("## Failed Tests")
         lines.append("")
         for i, f in enumerate(self.failures, 1):
-            lines.append(f"{i}. ❌ **{f.record.test_name}** — {f.analysis.category.value} "
-                         f"({f.analysis.severity.value}, {f.analysis.confidence}%)")
+            lines.append(
+                f"{i}. ❌ **{f.record.test_name}** — {f.analysis.category.value} "
+                f"({f.analysis.severity.value}, {f.analysis.confidence}%)"
+            )
         lines.append("")
         for f in self.failures:
             lines.append("---")
@@ -1306,34 +1479,41 @@ class ExecutionReportBuilder:
         esc = html.escape
         ic = _ICONS
         c = self._counts()
-        gen = (self.finish_ts or datetime.now(timezone.utc)).strftime("%Y-%m-%d %H:%M:%S UTC")
+        gen = (self.finish_ts or datetime.now(UTC)).strftime("%Y-%m-%d %H:%M:%S UTC")
         pkg = self.env.get("package", _package_version())
 
         # ---------- header + execution summary ----------
         def scell(label: str, value: str) -> str:
-            return f"<div class='s-cell'><b>{esc(label)}</b><span>{esc(value or 'n/a')}</span></div>"
+            return (
+                f"<div class='s-cell'><b>{esc(label)}</b><span>{esc(value or 'n/a')}</span></div>"
+            )
 
-        summary_cells = "".join([
-            scell("Run Name", self.run_name),
-            scell("Framework", self.env.get("framework", "")),
-            scell("Environment", self.env.get("environment", "")),
-            scell("Browser", self._browser()),
-            scell("Operating System", self.env.get("os", "")),
-            scell("Python", self.env.get("python", "")),
-            scell("Package", f"v{pkg}"),
-            scell("Commit", self.env.get("commit", "")),
-            scell("Total Tests", str(c["total"])),
-            scell("Passed", str(c["passed"])),
-            scell("Failed", str(c["failed"])),
-            scell("Skipped", str(c["skipped"])),
-            scell("Pass Rate", f"{c['pass_rate']}%"),
-            scell("Execution Duration", f"{self._duration_s():.2f}s"),
-            scell("AI Engine", self.cfg.provider),
-            scell("Generation Time", gen),
-        ])
+        summary_cells = "".join(
+            [
+                scell("Run Name", self.run_name),
+                scell("Framework", self.env.get("framework", "")),
+                scell("Environment", self.env.get("environment", "")),
+                scell("Browser", self._browser()),
+                scell("Operating System", self.env.get("os", "")),
+                scell("Python", self.env.get("python", "")),
+                scell("Package", f"v{pkg}"),
+                scell("Commit", self.env.get("commit", "")),
+                scell("Total Tests", str(c["total"])),
+                scell("Passed", str(c["passed"])),
+                scell("Failed", str(c["failed"])),
+                scell("Skipped", str(c["skipped"])),
+                scell("Pass Rate", f"{c['pass_rate']}%"),
+                scell("Execution Duration", f"{self._duration_s():.2f}s"),
+                scell("AI Engine", self.cfg.provider),
+                scell("Generation Time", gen),
+            ]
+        )
         exec_head = (
-            "<div class='exec-head'><h1><span class='ic'>" + ic["robot"] + "</span>"
-            + esc(self.run_name) + "</h1>"
+            "<div class='exec-head'><h1><span class='ic'>"
+            + ic["robot"]
+            + "</span>"
+            + esc(self.run_name)
+            + "</h1>"
             "<p class='exec-sub'>Consolidated AI failure-analysis dashboard for this test execution — "
             "one report covering every failed test case.</p>"
             "<div class='summary-grid'>" + summary_cells + "</div></div>"
@@ -1348,19 +1528,39 @@ class ExecutionReportBuilder:
                 f"<div class='k-desc'>{esc(desc)}</div></div>"
             )
 
-        kpis = "".join([
-            kpi("chip", "Total Tests", str(c["total"]), "Executed this run", "#0969da"),
-            kpi("check", "Passed", str(c["passed"]), f"{c['pass_rate']}% pass rate", "#1a7f37"),
-            kpi("warning", "Failed", str(c["failed"]), "Analysed by AI", "#cf222e"),
-            kpi("clock", "Skipped", str(c["skipped"]), "Not executed", "#8b949e"),
-            kpi("warning", "Critical Failures", str(c["critical"]), "Blocker + Critical", "#b30000"),
-            kpi("warning", "High", str(c["high"]), "Major severity", "#bc4c00"),
-            kpi("warning", "Medium", str(c["medium"]), "Minor severity", "#9a6700"),
-            kpi("warning", "Low", str(c["low"]), "Trivial severity", "#0969da"),
-            kpi("gauge", "Avg Confidence", f"{c['avg_confidence']}%", "Across failures", "#8250df"),
-            kpi("tag", "Categories", str(c["unique_categories"]), "Distinct root causes", "#bc4c00"),
-            kpi("user", "Owners", str(c["unique_owners"]), "Teams to route", "#1a7f37"),
-        ])
+        kpis = "".join(
+            [
+                kpi("chip", "Total Tests", str(c["total"]), "Executed this run", "#0969da"),
+                kpi("check", "Passed", str(c["passed"]), f"{c['pass_rate']}% pass rate", "#1a7f37"),
+                kpi("warning", "Failed", str(c["failed"]), "Analysed by AI", "#cf222e"),
+                kpi("clock", "Skipped", str(c["skipped"]), "Not executed", "#8b949e"),
+                kpi(
+                    "warning",
+                    "Critical Failures",
+                    str(c["critical"]),
+                    "Blocker + Critical",
+                    "#b30000",
+                ),
+                kpi("warning", "High", str(c["high"]), "Major severity", "#bc4c00"),
+                kpi("warning", "Medium", str(c["medium"]), "Minor severity", "#9a6700"),
+                kpi("warning", "Low", str(c["low"]), "Trivial severity", "#0969da"),
+                kpi(
+                    "gauge",
+                    "Avg Confidence",
+                    f"{c['avg_confidence']}%",
+                    "Across failures",
+                    "#8250df",
+                ),
+                kpi(
+                    "tag",
+                    "Categories",
+                    str(c["unique_categories"]),
+                    "Distinct root causes",
+                    "#bc4c00",
+                ),
+                kpi("user", "Owners", str(c["unique_owners"]), "Teams to route", "#1a7f37"),
+            ]
+        )
         kpi_sec = "<section><div class='kpis'>" + kpis + "</div></section>"
 
         # ---------- charts ----------
@@ -1395,41 +1595,65 @@ class ExecutionReportBuilder:
 
         if self.failures:
             toc = (
-                "<section><h2 class='sec-h'><span class='si'>" + ic["flow"] + "</span>Failure Navigator"
-                "<span class='count-pill' style='margin-left:8px'>" + str(len(self.failures)) + "</span></h2>"
-                "<div class='card'><div class='toc'>" + "".join(toc_items) + "</div></div></section>"
+                "<section><h2 class='sec-h'><span class='si'>"
+                + ic["flow"]
+                + "</span>Failure Navigator"
+                "<span class='count-pill' style='margin-left:8px'>"
+                + str(len(self.failures))
+                + "</span></h2>"
+                "<div class='card'><div class='toc'>"
+                + "".join(toc_items)
+                + "</div></div></section>"
             )
             main_sections = (
-                "<section><h2 class='sec-h'><span class='si'>" + ic["bug"] + "</span>Failure Analysis</h2>"
+                "<section><h2 class='sec-h'><span class='si'>"
+                + ic["bug"]
+                + "</span>Failure Analysis</h2>"
                 + "".join(sections)
                 + "<div id='noMatch' class='empty hidden'>No failures match your search / filters.</div></section>"
             )
         else:
             toc = ""
             main_sections = (
-                "<div class='no-fail'>" + ic["check"] + "All executed tests passed — no AI failure analysis required.</div>"
+                "<div class='no-fail'>"
+                + ic["check"]
+                + "All executed tests passed — no AI failure analysis required.</div>"
             )
 
         # ---------- left sidebar ----------
         def opts(values: list[str]) -> str:
             return "".join(f"<option value='{esc(v)}'>{esc(v)}</option>" for v in values)
 
-        sev_values = [s for s in ("Blocker", "Critical", "Major", "Minor", "Trivial")
-                      if self._counts()["severity_breakdown"].get(s)]
+        sev_values = [
+            s
+            for s in ("Blocker", "Critical", "Major", "Minor", "Trivial")
+            if self._counts()["severity_breakdown"].get(s)
+        ]
         sidebar = (
             "<aside class='dash-side'>"
             "<div class='card'>"
-            "<div class='side-title'>" + ic["bug"] + "Failed Tests <span class='count-pill' style='margin-left:auto'>"
-            + str(len(self.failures)) + "</span></div>"
+            "<div class='side-title'>"
+            + ic["bug"]
+            + "Failed Tests <span class='count-pill' style='margin-left:auto'>"
+            + str(len(self.failures))
+            + "</span></div>"
             "<div class='navlist'>"
             + ("".join(nav_items) if nav_items else "<div class='nav-empty'>No failures 🎉</div>")
             + "</div></div>"
             "<div class='card side-filter'>"
             "<div class='side-title'>" + ic["search"] + "Filters</div>"
-            "<div><label>Severity</label><select id='fSeverity'><option value=''>All</option>" + opts(sev_values) + "</select></div>"
-            "<div><label>Category</label><select id='fCategory'><option value=''>All</option>" + opts(cats_set) + "</select></div>"
-            "<div><label>Owner</label><select id='fOwner'><option value=''>All</option>" + opts(owners_set) + "</select></div>"
-            "<div><label>Framework</label><select id='fFramework'><option value=''>All</option>" + opts(fw_set) + "</select></div>"
+            "<div><label>Severity</label><select id='fSeverity'><option value=''>All</option>"
+            + opts(sev_values)
+            + "</select></div>"
+            "<div><label>Category</label><select id='fCategory'><option value=''>All</option>"
+            + opts(cats_set)
+            + "</select></div>"
+            "<div><label>Owner</label><select id='fOwner'><option value=''>All</option>"
+            + opts(owners_set)
+            + "</select></div>"
+            "<div><label>Framework</label><select id='fFramework'><option value=''>All</option>"
+            + opts(fw_set)
+            + "</select></div>"
             "<div><label>Confidence</label><select id='fConfidence'><option value=''>All</option>"
             "<option value='high'>High (85%+)</option><option value='medium'>Medium (60-84%)</option><option value='low'>Low (&lt;60%)</option></select></div>"
             "<div><label>Status</label><select id='fStatus'><option value=''>All</option><option value='failed'>Failed</option></select></div>"
@@ -1439,32 +1663,55 @@ class ExecutionReportBuilder:
         # ---------- toolbar / controls ----------
         toolbar = (
             "<div class='toolbar'>"
-            "<button class='btn' data-action='expandAll' type='button'>" + ic["search"] + "Expand All</button>"
-            "<button class='btn' data-action='collapseAll' type='button'>" + ic["tag"] + "Collapse All</button>"
-            "<button class='btn' data-action='html' type='button'>" + ic["download"] + "Export Report</button>"
+            "<button class='btn' data-action='expandAll' type='button'>"
+            + ic["search"]
+            + "Expand All</button>"
+            "<button class='btn' data-action='collapseAll' type='button'>"
+            + ic["tag"]
+            + "Collapse All</button>"
+            "<button class='btn' data-action='html' type='button'>"
+            + ic["download"]
+            + "Export Report</button>"
             "<button class='btn' data-action='json' type='button'>" + ic["code"] + "JSON</button>"
             "<button class='btn' data-action='md' type='button'>" + ic["doc"] + "Markdown</button>"
-            "<button class='btn' data-action='print' type='button'>" + ic["print"] + "Print</button>"
+            "<button class='btn' data-action='print' type='button'>"
+            + ic["print"]
+            + "Print</button>"
             "<button class='btn icon' id='themeBtn' data-action='theme' type='button' aria-label='Toggle theme'>"
-            + ic["moon"] + "</button>"
+            + ic["moon"]
+            + "</button>"
             "</div>"
         )
         controls = (
             "<section><div class='controls'>"
-            "<div class='searchbar'>" + ic["search"] +
-            "<input id='dashSearch' type='search' placeholder='Search test, root cause, evidence, owner, exception…' "
+            "<div class='searchbar'>"
+            + ic["search"]
+            + "<input id='dashSearch' type='search' placeholder='Search test, root cause, evidence, owner, exception…' "
             "aria-label='Global search'></div>" + toolbar + "</div></section>"
         )
 
         header = (
             "<header class='top'><div class='top-in'><div class='top-row'>"
-            "<div class='brand'><span class='ic'>" + ic["robot"] + "</span>AI Failure Analysis Dashboard</div>"
-            + ("<span class='badge fail'>" + ic["warning"] + str(len(self.failures)) + " FAILED</span>"
-               if self.failures else "<span class='badge' style='background:var(--green-bg);color:var(--green)'>"
-               + ic["check"] + "ALL PASSED</span>")
+            "<div class='brand'><span class='ic'>"
+            + ic["robot"]
+            + "</span>AI Failure Analysis Dashboard</div>"
+            + (
+                "<span class='badge fail'>"
+                + ic["warning"]
+                + str(len(self.failures))
+                + " FAILED</span>"
+                if self.failures
+                else "<span class='badge' style='background:var(--green-bg);color:var(--green)'>"
+                + ic["check"]
+                + "ALL PASSED</span>"
+            )
             + "<div class='spacer'></div>"
             "<span class='chip'>" + ic["chip"] + "Total&nbsp;<b>" + str(c["total"]) + "</b></span>"
-            "<span class='chip'>" + ic["gauge"] + "Pass&nbsp;<b>" + str(c["pass_rate"]) + "%</b></span>"
+            "<span class='chip'>"
+            + ic["gauge"]
+            + "Pass&nbsp;<b>"
+            + str(c["pass_rate"])
+            + "%</b></span>"
             "</div></div></header>"
         )
 
@@ -1475,8 +1722,12 @@ class ExecutionReportBuilder:
             "markdown": self._render_markdown(),
             "failures": {
                 fid: {
-                    "slug": pf["slug"], "bug": pf["bug"], "markdown": pf["markdown"], "json": pf["json"],
-                } for fid, pf in payload_failures.items()
+                    "slug": pf["slug"],
+                    "bug": pf["bug"],
+                    "markdown": pf["markdown"],
+                    "json": pf["json"],
+                }
+                for fid, pf in payload_failures.items()
             },
             "galleries": galleries,
             "raw": payload,
@@ -1494,16 +1745,29 @@ class ExecutionReportBuilder:
         )
 
         body = (
-            header + controls +
-            "<div class='dash-shell'>" + sidebar +
-            "<div class='dash-main'>" + exec_head + kpi_sec + charts_sec + toc + main_sections +
-            "<footer><div class='fl'>" + ic["robot"] +
-            "Generated by <b>&nbsp;multi-framework-tc-failure-ai-analyzer</b>&nbsp;· v" + esc(pkg) +
-            "&nbsp;· " + esc(gen) + "</div><div class='fl'>"
-            "<a href='https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer' target='_blank' rel='noopener'>" + ic["git"] + "GitHub</a>"
+            header
+            + controls
+            + "<div class='dash-shell'>"
+            + sidebar
+            + "<div class='dash-main'>"
+            + exec_head
+            + kpi_sec
+            + charts_sec
+            + toc
+            + main_sections
+            + "<footer><div class='fl'>"
+            + ic["robot"]
+            + "Generated by <b>&nbsp;multi-framework-tc-failure-ai-analyzer</b>&nbsp;· v"
+            + esc(pkg)
+            + "&nbsp;· "
+            + esc(gen)
+            + "</div><div class='fl'>"
+            "<a href='https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer' target='_blank' rel='noopener'>"
+            + ic["git"]
+            + "GitHub</a>"
             "</div></footer></div></div>"
-            + modal +
-            "<div class='toast' id='toast' role='status' aria-live='polite'></div>"
+            + modal
+            + "<div class='toast' id='toast' role='status' aria-live='polite'></div>"
             f"<script id='ai-data' type='application/json'>{data_json}</script>"
             f"<script>{_DASHBOARD_JS}</script>"
         )
@@ -1514,12 +1778,13 @@ class ExecutionReportBuilder:
             f"<title>AI Failure Analysis — {esc(self.run_name)}</title>"
             "<link rel='preconnect' href='https://fonts.googleapis.com'>"
             "<link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap' rel='stylesheet'>"
-            f"<style>{_REPORT_CSS}{_DASHBOARD_CSS}</style></head><body>"
-            + body + "</body></html>"
+            f"<style>{_REPORT_CSS}{_DASHBOARD_CSS}</style></head><body>" + body + "</body></html>"
         )
         return doc, payload
 
-    def _json_payload(self, c: dict[str, Any], gen: str, payload_failures: dict[str, Any]) -> dict[str, Any]:
+    def _json_payload(
+        self, c: dict[str, Any], gen: str, payload_failures: dict[str, Any]
+    ) -> dict[str, Any]:
         return {
             "run": {
                 "run_name": self.run_name,
@@ -1555,41 +1820,96 @@ class ExecutionReportBuilder:
             owner = f.analysis.owner or "Unassigned"
             owner_counts[owner] = owner_counts.get(owner, 0) + 1
             cf = int(f.analysis.confidence)
-            conf_buckets["High (85%+)" if cf >= 85 else "Medium (60-84%)" if cf >= 60 else "Low (<60%)"] += 1
+            conf_buckets[
+                "High (85%+)" if cf >= 85 else "Medium (60-84%)" if cf >= 60 else "Low (<60%)"
+            ] += 1
         sev = c["severity_breakdown"]
         sev_labels = [s for s in ("Blocker", "Critical", "Major", "Minor", "Trivial") if sev.get(s)]
-        sev_colors = {"Blocker": "#b30000", "Critical": "#cf222e", "Major": "#bc4c00", "Minor": "#9a6700", "Trivial": "#0969da"}
-        palette = ["#4c9be8", "#8b7ff0", "#3fb6a8", "#f0a35e", "#e86a8f", "#6ac26a", "#c99bf0", "#f0c95e"]
+        sev_colors = {
+            "Blocker": "#b30000",
+            "Critical": "#cf222e",
+            "Major": "#bc4c00",
+            "Minor": "#9a6700",
+            "Trivial": "#0969da",
+        }
+        palette = [
+            "#4c9be8",
+            "#8b7ff0",
+            "#3fb6a8",
+            "#f0a35e",
+            "#e86a8f",
+            "#6ac26a",
+            "#c99bf0",
+            "#f0c95e",
+        ]
 
         def doughnut(labels: list[str], values: list[int], colors: list[str]) -> str:
-            return json.dumps({
-                "type": "doughnut",
-                "data": {"labels": labels, "datasets": [{"data": values, "backgroundColor": colors, "borderWidth": 0, "hoverOffset": 4}]},
-                "options": {"cutout": "62%"},
-            })
+            return json.dumps(
+                {
+                    "type": "doughnut",
+                    "data": {
+                        "labels": labels,
+                        "datasets": [
+                            {
+                                "data": values,
+                                "backgroundColor": colors,
+                                "borderWidth": 0,
+                                "hoverOffset": 4,
+                            }
+                        ],
+                    },
+                    "options": {"cutout": "62%"},
+                }
+            )
 
         def bar(labels: list[str], values: list[int], color: Any) -> str:
-            return json.dumps({
-                "type": "bar",
-                "data": {"labels": labels, "datasets": [{"label": "Count", "data": values,
-                         "backgroundColor": color, "borderRadius": 7, "maxBarThickness": 44}]},
-                "options": {"plugins": {"legend": {"display": False}}},
-            })
+            return json.dumps(
+                {
+                    "type": "bar",
+                    "data": {
+                        "labels": labels,
+                        "datasets": [
+                            {
+                                "label": "Count",
+                                "data": values,
+                                "backgroundColor": color,
+                                "borderRadius": 7,
+                                "maxBarThickness": 44,
+                            }
+                        ],
+                    },
+                    "options": {"plugins": {"legend": {"display": False}}},
+                }
+            )
 
-        cat_chart = doughnut(list(cat_counts.keys()), list(cat_counts.values()), palette[: len(cat_counts)])
-        sev_chart = doughnut(sev_labels, [sev[s] for s in sev_labels], [sev_colors[s] for s in sev_labels])
-        conf_chart = bar(list(conf_buckets.keys()), list(conf_buckets.values()), ["#1a7f37", "#9a6700", "#cf222e"])
-        owner_chart = bar(list(owner_counts.keys()), list(owner_counts.values()), palette[: len(owner_counts)])
+        cat_chart = doughnut(
+            list(cat_counts.keys()), list(cat_counts.values()), palette[: len(cat_counts)]
+        )
+        sev_chart = doughnut(
+            sev_labels, [sev[s] for s in sev_labels], [sev_colors[s] for s in sev_labels]
+        )
+        conf_chart = bar(
+            list(conf_buckets.keys()),
+            list(conf_buckets.values()),
+            ["#1a7f37", "#9a6700", "#cf222e"],
+        )
+        owner_chart = bar(
+            list(owner_counts.keys()), list(owner_counts.values()), palette[: len(owner_counts)]
+        )
 
         def card(title: str, icon_key: str, chart: str, color: str) -> str:
             return (
                 "<div class='card' style='border-left:4px solid " + color + "'>"
                 "<div class='k-top'>" + ic.get(icon_key, "") + html.escape(title) + "</div>"
-                "<div class='chartbox'><canvas data-chart='" + html.escape(chart) + "'></canvas></div></div>"
+                "<div class='chartbox'><canvas data-chart='"
+                + html.escape(chart)
+                + "'></canvas></div></div>"
             )
 
         return (
-            "<section data-chartsec><h2 class='sec-h'><span class='si'>" + ic["gauge"] + "</span>Execution Insights</h2>"
+            "<section data-chartsec><h2 class='sec-h'><span class='si'>"
+            + ic["gauge"]
+            + "</span>Execution Insights</h2>"
             "<div class='kpis'>"
             + card("Failure Categories", "tag", cat_chart, "#4c9be8")
             + card("Severity Distribution", "warning", sev_chart, "#cf222e")
@@ -1646,31 +1966,46 @@ class ExecutionReportBuilder:
             f"<div class='num' style='color:{conf_color}'>{conf}%<small>CONFIDENCE</small></div></div>"
         )
 
-        rc_badges = "".join([
-            f"<span class='pill' style='background:{sev_bg};color:{sev_color};border-color:{sev_color}'>{ic['warning']}{esc(sev_label)} · {esc(sev)}</span>",
-            f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['tag']}{esc(a.category.value)}</span>",
-            f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['user']}{esc(a.owner or 'Unassigned')}</span>",
-            f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['brain']}{esc(a.source)}</span>",
-        ])
+        rc_badges = "".join(
+            [
+                f"<span class='pill' style='background:{sev_bg};color:{sev_color};border-color:{sev_color}'>{ic['warning']}{esc(sev_label)} · {esc(sev)}</span>",
+                f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['tag']}{esc(a.category.value)}</span>",
+                f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['user']}{esc(a.owner or 'Unassigned')}</span>",
+                f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['brain']}{esc(a.source)}</span>",
+            ]
+        )
         root_cause = (
-            "<h4 class='sec-h'><span class='si'>" + ic["warning"] + "</span>AI Summary &amp; Root Cause</h4>"
+            "<h4 class='sec-h'><span class='si'>"
+            + ic["warning"]
+            + "</span>AI Summary &amp; Root Cause</h4>"
             f"<div class='card rc' style='--sev:{sev_color}'>{ring}"
             "<div class='rc-body'><h2>" + esc(a.root_cause or "Root cause not determined") + "</h2>"
             f"<p>{esc(a.reasoning)}</p><div class='rc-badges'>{rc_badges}</div>"
-            "<div class='rc-fix'>" + ic["bulb"] + "<span><b>Suggested fix:</b> "
-            + esc(a.recommended_fix or "n/a") + "</span></div></div></div>"
+            "<div class='rc-fix'>"
+            + ic["bulb"]
+            + "<span><b>Suggested fix:</b> "
+            + esc(a.recommended_fix or "n/a")
+            + "</span></div></div></div>"
         )
 
         # evidence accordions
         ev_cards: list[str] = []
         if a.evidence:
-            inner = "<ul style='margin:6px 0 0;padding-left:18px'>" + "".join(
-                f"<li>{esc(str(x))}</li>" for x in a.evidence
-            ) + "</ul>"
+            inner = (
+                "<ul style='margin:6px 0 0;padding-left:18px'>"
+                + "".join(f"<li>{esc(str(x))}</li>" for x in a.evidence)
+                + "</ul>"
+            )
             ev_cards.append(acc("brain", "AI Evidence Signals", str(len(a.evidence)), inner, True))
         if ev.exception_type or ev.exception_message:
-            ev_cards.append(acc("warning", "Exception", ev.exception_type or "",
-                                code_block(f"{ev.exception_type}: {ev.exception_message}".strip(": "))))
+            ev_cards.append(
+                acc(
+                    "warning",
+                    "Exception",
+                    ev.exception_type or "",
+                    code_block(f"{ev.exception_type}: {ev.exception_message}".strip(": ")),
+                )
+            )
         if ev.assertion_message:
             ev_cards.append(acc("check", "Assertion", "", code_block(ev.assertion_message)))
         if ev.stacktrace:
@@ -1678,30 +2013,59 @@ class ExecutionReportBuilder:
         if ev.network:
             rows = "".join(
                 "<tr><td class='mono'>" + esc(str(n.get("method", ""))) + "</td>"
-                "<td class='mono' style='word-break:break-all'>" + esc(str(n.get("url", ""))) + "</td>"
+                "<td class='mono' style='word-break:break-all'>"
+                + esc(str(n.get("url", "")))
+                + "</td>"
                 "<td class='mono'>" + esc(str(n.get("status", ""))) + "</td>"
-                "<td class='mono'>" + (f"{n.get('duration_ms')}ms" if n.get("duration_ms") is not None else "") + "</td></tr>"
+                "<td class='mono'>"
+                + (f"{n.get('duration_ms')}ms" if n.get("duration_ms") is not None else "")
+                + "</td></tr>"
                 for n in ev.network
             )
-            ev_cards.append(acc("network", "Network Requests", str(len(ev.network)),
-                                "<div class='tbl-wrap'><table class='data'><thead><tr><th>Method</th><th>URL</th>"
-                                "<th>Status</th><th>Duration</th></tr></thead><tbody>" + rows + "</tbody></table></div>"))
+            ev_cards.append(
+                acc(
+                    "network",
+                    "Network Requests",
+                    str(len(ev.network)),
+                    "<div class='tbl-wrap'><table class='data'><thead><tr><th>Method</th><th>URL</th>"
+                    "<th>Status</th><th>Duration</th></tr></thead><tbody>"
+                    + rows
+                    + "</tbody></table></div>",
+                )
+            )
         if ev.api_responses:
-            ev_cards.append(acc("network", "API Responses", str(len(ev.api_responses)),
-                                code_block(json.dumps(ev.api_responses, indent=2, ensure_ascii=False), "360px")))
+            ev_cards.append(
+                acc(
+                    "network",
+                    "API Responses",
+                    str(len(ev.api_responses)),
+                    code_block(json.dumps(ev.api_responses, indent=2, ensure_ascii=False), "360px"),
+                )
+            )
         if ev.console_logs:
-            ev_cards.append(acc("terminal", "Console Logs", str(len(ev.console_logs)),
-                                code_block(json.dumps(ev.console_logs, indent=2, ensure_ascii=False), "300px")))
+            ev_cards.append(
+                acc(
+                    "terminal",
+                    "Console Logs",
+                    str(len(ev.console_logs)),
+                    code_block(json.dumps(ev.console_logs, indent=2, ensure_ascii=False), "300px"),
+                )
+            )
         if ev.dom:
             dom = ev.dom if len(ev.dom) <= 6000 else ev.dom[:6000] + "\n… (truncated)"
-            ev_cards.append(acc("code", "DOM Snapshot", f"{len(ev.dom)} chars", code_block(dom, "360px")))
+            ev_cards.append(
+                acc("code", "DOM Snapshot", f"{len(ev.dom)} chars", code_block(dom, "360px"))
+            )
         if not ev_cards:
-            ev_cards.append("<div class='empty'>No raw evidence signals were captured for this failure.</div>")
+            ev_cards.append(
+                "<div class='empty'>No raw evidence signals were captured for this failure.</div>"
+            )
         evsearch_scope = f"#{fid}ev"
         evidence_sec = (
             "<h4 class='sec-h'><span class='si'>" + ic["search"] + "</span>Evidence</h4>"
-            "<div class='searchbar'>" + ic["search"] +
-            f"<input type='search' placeholder='Search evidence…' data-evsearch='{evsearch_scope}' aria-label='Search evidence'></div>"
+            "<div class='searchbar'>"
+            + ic["search"]
+            + f"<input type='search' placeholder='Search evidence…' data-evsearch='{evsearch_scope}' aria-label='Search evidence'></div>"
             f"<div id='{fid}ev'>" + "".join(ev_cards) + "</div>"
         )
 
@@ -1713,21 +2077,33 @@ class ExecutionReportBuilder:
             src = esc(ev.screenshot)
             screenshots_sec = (
                 "<h4 class='sec-h'><span class='si'>" + ic["camera"] + "</span>Screenshots</h4>"
-                "<div class='shots'><div class='shot' data-gallery='" + fid + "' data-idx='0' tabindex='0' role='button' "
-                "aria-label='Open screenshot gallery'><img src='" + src + "' alt='Failure screenshot' "
+                "<div class='shots'><div class='shot' data-gallery='"
+                + fid
+                + "' data-idx='0' tabindex='0' role='button' "
+                "aria-label='Open screenshot gallery'><img src='"
+                + src
+                + "' alt='Failure screenshot' "
                 "onerror=\"this.closest('.shot').style.display='none'\">"
                 "<div class='cap'>Click to open gallery · zoom · prev / next</div></div></div>"
             )
 
         # suggested fix
         prevent = f"Add a regression guard for this {a.category.value} scenario and alert when similar signals recur in future runs."
-        why = (f"Directly targets the {a.category.value.lower()} root cause: {a.root_cause}"
-               if a.root_cause else f"Directly targets the {a.category.value.lower()} failure class.")
+        why = (
+            f"Directly targets the {a.category.value.lower()} root cause: {a.root_cause}"
+            if a.root_cause
+            else f"Directly targets the {a.category.value.lower()} failure class."
+        )
         fix_sec = (
-            "<h4 class='sec-h'><span class='si'>" + ic["bulb"] + "</span>Suggested Fix &amp; Prevention</h4>"
-            "<div class='card rec'><div class='rec-head'><span class='rec-ic'>" + ic["bulb"] + "</span>"
+            "<h4 class='sec-h'><span class='si'>"
+            + ic["bulb"]
+            + "</span>Suggested Fix &amp; Prevention</h4>"
+            "<div class='card rec'><div class='rec-head'><span class='rec-ic'>"
+            + ic["bulb"]
+            + "</span>"
             "<div><h3>Recommended Fix</h3><p class='rec-primary'>"
-            + esc(a.recommended_fix or "No specific fix recommended.") + "</p></div></div>"
+            + esc(a.recommended_fix or "No specific fix recommended.")
+            + "</p></div></div>"
             "<div class='rec-grid'>"
             "<div><b>Why this works</b><p>" + esc(why) + "</p></div>"
             "<div><b>Preventive action</b><p>" + esc(prevent) + "</p></div>"
@@ -1736,8 +2112,17 @@ class ExecutionReportBuilder:
 
         # bug report
         bug_title = f"[{sev_label}] {r.test_name} — {a.category.value}"
-        bug_env_parts = [p for p in [m.environment, m.browser, m.os, m.framework_version,
-                         (f"Python {m.python_version}" if m.python_version else "")] if p]
+        bug_env_parts = [
+            p
+            for p in [
+                m.environment,
+                m.browser,
+                m.os,
+                m.framework_version,
+                (f"Python {m.python_version}" if m.python_version else ""),
+            ]
+            if p
+        ]
         bug_env_full = " · ".join(bug_env_parts)
         bug_steps = [f"Execute test: {r.test_name}", "Observe the reported failure below"]
         bug_md = f.bug_markdown or ReportGenerator._bug_markdown(
@@ -1783,9 +2168,13 @@ class ExecutionReportBuilder:
                     f"<td>{cat}</td><td>{esc(sconf_txt)}</td></tr>"
                 )
             similar_sec = (
-                "<h4 class='sec-h'><span class='si'>" + ic["history"] + "</span>Similar Failures</h4>"
+                "<h4 class='sec-h'><span class='si'>"
+                + ic["history"]
+                + "</span>Similar Failures</h4>"
                 "<div class='tbl-wrap'><table class='data'><thead><tr><th>Test</th><th>Similarity</th>"
-                "<th>Category</th><th>Confidence</th></tr></thead><tbody>" + sim_rows + "</tbody></table></div>"
+                "<th>Category</th><th>Confidence</th></tr></thead><tbody>"
+                + sim_rows
+                + "</tbody></table></div>"
             )
 
         # timeline
@@ -1793,11 +2182,24 @@ class ExecutionReportBuilder:
         timeline_sec = (
             "<h4 class='sec-h'><span class='si'>" + ic["flow"] + "</span>Failure Timeline</h4>"
             "<div class='card timeline'>"
-            "<div class='tl'><span class='dot'></span><div><h4>Test Started</h4><p>" + esc(r.test_name) + "</p></div></div>"
-            "<div class='tl'><span class='dot'></span><div><h4>Execution</h4><p>" + esc(m.environment or "Test steps executed") + (f" · {exec_time}" if exec_time else "") + "</p></div></div>"
-            "<div class='tl fail'><span class='dot'></span><div><h4>Failure Detected</h4><p>" + esc((ev.exception_type + ": " if ev.exception_type else "") + (actual or "")) + "</p></div></div>"
-            "<div class='tl ai'><span class='dot'></span><div><h4>AI Analysis</h4><p>" + esc(a.category.value) + f" · {conf}% · via " + esc(a.source) + "</p></div></div>"
-            "<div class='tl done'><span class='dot'></span><div><h4>Report Generated</h4><p>" + esc(tl_time or "just now") + "</p></div></div>"
+            "<div class='tl'><span class='dot'></span><div><h4>Test Started</h4><p>"
+            + esc(r.test_name)
+            + "</p></div></div>"
+            "<div class='tl'><span class='dot'></span><div><h4>Execution</h4><p>"
+            + esc(m.environment or "Test steps executed")
+            + (f" · {exec_time}" if exec_time else "")
+            + "</p></div></div>"
+            "<div class='tl fail'><span class='dot'></span><div><h4>Failure Detected</h4><p>"
+            + esc((ev.exception_type + ": " if ev.exception_type else "") + (actual or ""))
+            + "</p></div></div>"
+            "<div class='tl ai'><span class='dot'></span><div><h4>AI Analysis</h4><p>"
+            + esc(a.category.value)
+            + f" · {conf}% · via "
+            + esc(a.source)
+            + "</p></div></div>"
+            "<div class='tl done'><span class='dot'></span><div><h4>Report Generated</h4><p>"
+            + esc(tl_time or "just now")
+            + "</p></div></div>"
             "</div>"
         )
 
@@ -1808,7 +2210,9 @@ class ExecutionReportBuilder:
             return f"<div class='meta-row'><span class='l'>{esc(label)}</span><span class='v'>{esc(value)}</span></div>"
 
         meta_card = (
-            "<div class='card'><h3>" + ic["chip"] + "Execution Metadata</h3>"
+            "<div class='card'><h3>"
+            + ic["chip"]
+            + "Execution Metadata</h3>"
             + mrow("Test", r.test_name)
             + mrow("Framework", m.framework_version)
             + mrow("Browser", m.browser)
@@ -1826,8 +2230,16 @@ class ExecutionReportBuilder:
         right_col = "<aside class='side'>" + meta_card + timeline_sec + "</aside>"
 
         # summary line for the collapsible header
-        fmeta = " · ".join(p for p in [a.category.value, a.owner or "Unassigned",
-                            (exec_time or ""), (m.browser or "")] if p)
+        fmeta = " · ".join(
+            p
+            for p in [
+                a.category.value,
+                a.owner or "Unassigned",
+                (exec_time or ""),
+                (m.browser or ""),
+            ]
+            if p
+        )
         header_badges = (
             f"<span class='pill' style='background:{sev_bg};color:{sev_color}'>{esc(sev_label)}</span>"
             f"<span class='pill' style='background:var(--accent-soft);color:var(--accent)'>{ic['gauge']}{conf}%</span>"
@@ -1842,7 +2254,11 @@ class ExecutionReportBuilder:
             f"<div class='ft'><h3>TC-{idx:02d} · {esc(r.test_name)}</h3>"
             f"<p class='fmeta'>{esc(fmeta)}</p></div>"
             f"<div class='fbadges'>{header_badges}</div></summary>"
-            "<div class='fsec-body'><div class='fgrid'><div>" + left_col + "</div>" + right_col + "</div></div>"
+            "<div class='fsec-body'><div class='fgrid'><div>"
+            + left_col
+            + "</div>"
+            + right_col
+            + "</div></div>"
             "</details>"
         )
 
@@ -1871,17 +2287,25 @@ class ExecutionReportBuilder:
             "analysis": a.to_dict(),
         }
         return {
-            "nav": nav, "toc": toc, "section": section, "gallery": gallery,
-            "payload": {"slug": slug, "bug": bug_md, "markdown": self.report_gen.to_markdown(r, a), "json": payload},
+            "nav": nav,
+            "toc": toc,
+            "section": section,
+            "gallery": gallery,
+            "payload": {
+                "slug": slug,
+                "bug": bug_md,
+                "markdown": self.report_gen.to_markdown(r, a),
+                "json": payload,
+            },
         }
 
 
 # Module-level singleton so that multiple pytest hook sites (the packaged
 # plugin and a project's own conftest) all feed and finalise the *same* report.
-_EXECUTION_BUILDER: "ExecutionReportBuilder | None" = None
+_EXECUTION_BUILDER: ExecutionReportBuilder | None = None
 
 
-def get_execution_builder(cfg: AIConfig = ai_config) -> "ExecutionReportBuilder":
+def get_execution_builder(cfg: AIConfig = ai_config) -> ExecutionReportBuilder:
     """Return the shared per-run consolidated-report builder (creating it once)."""
     global _EXECUTION_BUILDER
     if _EXECUTION_BUILDER is None:

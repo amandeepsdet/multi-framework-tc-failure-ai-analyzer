@@ -23,9 +23,7 @@ def main() -> None:
                 "type": "AssertionError",
                 "message": "server returned HTTP 500",
             },
-            "evidence": {
-                "network": [{"method": "POST", "url": "/api/orders", "status": 500}]
-            },
+            "evidence": {"network": [{"method": "POST", "url": "/api/orders", "status": 500}]},
         }
     )
 
@@ -34,8 +32,10 @@ def main() -> None:
 
     # 3. Report generation
     print(render(result, "markdown", context))
-    print(f"\ncategory={result.category.value} "
-          f"confidence={result.confidence.value}% owner={result.owner}")
+    print(
+        f"\ncategory={result.category.value} "
+        f"confidence={result.confidence.value}% owner={result.owner}"
+    )
 
 
 if __name__ == "__main__":

@@ -14,15 +14,15 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Mapping
 
 from . import analysis as analysis_mod
 from . import discovery as discovery_mod
 from . import github as gh
 from . import render as render_mod
 from .grouping import group_failures
-from .inputs import ActionInputs, load_inputs
+from .inputs import load_inputs
 from .masking import default_masker
 
 
@@ -160,7 +160,9 @@ def _maybe_comment(inputs, outcome, groups, report_url, masker, env) -> None:
 
 
 def _publish_empty(inputs, discovery, reports_dir, env) -> None:
-    summary = render_mod.build_step_summary(None, warnings=discovery.warnings, report_path=reports_dir)
+    summary = render_mod.build_step_summary(
+        None, warnings=discovery.warnings, report_path=reports_dir
+    )
     gh.write_step_summary(summary, env.get("GITHUB_STEP_SUMMARY"))
     gh.write_outputs(
         render_mod.build_outputs(None, report_path=reports_dir, artifact_name=inputs.artifact_name)

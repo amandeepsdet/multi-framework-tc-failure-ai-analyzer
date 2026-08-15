@@ -17,16 +17,21 @@ clear ``failure_reason`` and no fabricated suggestions.
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from .dom import Element, parse_dom
 from .generators import generate_suggestions
-from .models import HealingResult, LocatorSuggestion
+from .models import HealingResult
 from .ranker import LocatorRanker
 
 _ID_RE = re.compile(r"#([\w-]+)|@id=['\"]([\w-]+)['\"]|\bid=([\w-]+)")
 _CLASS_RE = re.compile(r"\.([\w-]+)|@class=['\"]([^'\"]+)['\"]")
-_TESTID_RE = re.compile(r"data-test[\w-]*=['\"]?([\w -]+)['\"]?|get_by_test_id\(['\"]([^'\"]+)['\"]\)")
-_TEXT_RE = re.compile(r"get_by_text\(['\"]([^'\"]+)['\"]\)|text\(\)=['\"]([^'\"]+)['\"]|normalize-space\(\)=['\"]([^'\"]+)['\"]")
+_TESTID_RE = re.compile(
+    r"data-test[\w-]*=['\"]?([\w -]+)['\"]?|get_by_test_id\(['\"]([^'\"]+)['\"]\)"
+)
+_TEXT_RE = re.compile(
+    r"get_by_text\(['\"]([^'\"]+)['\"]\)|text\(\)=['\"]([^'\"]+)['\"]|normalize-space\(\)=['\"]([^'\"]+)['\"]"
+)
 _TAG_RE = re.compile(r"^\s*(?://)?([a-zA-Z][\w-]*)")
 
 
@@ -67,7 +72,7 @@ class LocatorHealingEngine:
 
     # -- hint extraction ---------------------------------------------------- #
     @staticmethod
-    def _extract_hints(locator: str) -> dict[str, object]:
+    def _extract_hints(locator: str) -> dict[str, Any]:
         loc = locator or ""
         ids = [g for m in _ID_RE.findall(loc) for g in m if g]
         classes: list[str] = []
@@ -93,7 +98,7 @@ class LocatorHealingEngine:
     def _resolve_target(
         self,
         elements: list[Element],
-        hints: dict[str, object],
+        hints: dict[str, Any],
         target_text: str | None,
         target_attributes: dict[str, str] | None,
     ) -> Element | None:
@@ -105,7 +110,7 @@ class LocatorHealingEngine:
 
         # 2. Explicit target text (or text parsed from the old locator).
         wanted_texts = [t for t in ([target_text] if target_text else []) if t]
-        wanted_texts += list(hints.get("texts") or [])  # type: ignore[arg-type]
+        wanted_texts += list(hints.get("texts") or [])
         for want in wanted_texts:
             match = self._best_text_match(elements, want)
             if match is not None:
@@ -113,14 +118,16 @@ class LocatorHealingEngine:
 
         # 3. Same tag as the old locator, scored by shared classes.
         tag = str(hints.get("tag") or "")
-        old_classes = set(hints.get("classes") or [])  # type: ignore[arg-type]
+        old_classes = set(hints.get("classes") or [])
         candidates = [e for e in elements if not tag or e.tag == tag]
         candidates = [e for e in candidates if e.is_interactive()] or candidates
         if candidates:
+
             def score(e: Element) -> tuple[int, int]:
                 shared = len(old_classes & set(e.classes()))
                 stable = 1 if (e.test_id() or e.attr("id")) else 0
                 return (shared, stable)
+
             best = max(candidates, key=score)
             return best
         return None
@@ -138,12 +145,10 @@ class LocatorHealingEngine:
 
     # -- diagnosis ---------------------------------------------------------- #
     @staticmethod
-    def _diagnose(
-        elements: list[Element], hints: dict[str, object], target: Element | None
-    ) -> str:
-        ids = list(hints.get("ids") or [])          # type: ignore[arg-type]
-        classes = list(hints.get("classes") or [])  # type: ignore[arg-type]
-        test_ids = list(hints.get("test_ids") or [])  # type: ignore[arg-type]
+    def _diagnose(elements: list[Element], hints: dict[str, Any], target: Element | None) -> str:
+        ids = list(hints.get("ids") or [])
+        classes = list(hints.get("classes") or [])
+        test_ids = list(hints.get("test_ids") or [])
 
         present_ids = {e.attr("id") for e in elements if e.attr("id")}
         present_classes = {c for e in elements for c in e.classes()}

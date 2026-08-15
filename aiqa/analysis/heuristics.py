@@ -120,7 +120,12 @@ class HeuristicClassifier:
                 reason=f"HTTP {code} returned from a backend endpoint before the client could proceed.",
             )
         # 2. Authentication / Authorization.
-        if 401 in auth_errors or 401 in text_codes or "unauthor" in text or "unauthenticated" in text:
+        if (
+            401 in auth_errors
+            or 401 in text_codes
+            or "unauthor" in text
+            or "unauthenticated" in text
+        ):
             return HeuristicVerdict(
                 FailureCategory.AUTHENTICATION,
                 88,
@@ -139,10 +144,20 @@ class HeuristicClassifier:
                 reason="HTTP 403 Forbidden returned for the requested resource.",
             )
         # 3. Locator / element issues.
-        if any(k in text for k in (
-            "locator", "selector", "waiting for", "element is not", "no node found",
-            "no such element", "strict mode", "not visible", "not clickable",
-        )):
+        if any(
+            k in text
+            for k in (
+                "locator",
+                "selector",
+                "waiting for",
+                "element is not",
+                "no node found",
+                "no such element",
+                "strict mode",
+                "not visible",
+                "not clickable",
+            )
+        ):
             return HeuristicVerdict(
                 FailureCategory.LOCATOR,
                 80,
@@ -152,7 +167,10 @@ class HeuristicClassifier:
                 reason="Locator failed to resolve within the timeout; the UI markup likely changed.",
             )
         # 4. Timeout / network.
-        if any(k in text for k in ("timeout", "timed out", "err_connection", "econnrefused", "unreachable")):
+        if any(
+            k in text
+            for k in ("timeout", "timed out", "err_connection", "econnrefused", "unreachable")
+        ):
             is_conn = "connection" in text or "econnrefused" in text or "unreachable" in text
             category = FailureCategory.NETWORK if is_conn else FailureCategory.PERFORMANCE
             return HeuristicVerdict(
@@ -162,7 +180,9 @@ class HeuristicClassifier:
                 "Check environment availability and latency; raise the timeout only if the app is genuinely slow.",
             )
         # 5. Empty / unrendered page.
-        if ("did not render" in text or "blank" in text) or (ev.dom_snapshot and len(ev.dom_snapshot.strip()) < 200):
+        if ("did not render" in text or "blank" in text) or (
+            ev.dom_snapshot and len(ev.dom_snapshot.strip()) < 200
+        ):
             return HeuristicVerdict(
                 FailureCategory.UI,
                 68,
@@ -178,7 +198,10 @@ class HeuristicClassifier:
                 "Verify the expected value and the data the system produced under test.",
             )
         # 7. Data / range issues.
-        if any(k in text for k in ("out of range", "outside", "not numeric", "invalid value", "type error")):
+        if any(
+            k in text
+            for k in ("out of range", "outside", "not numeric", "invalid value", "type error")
+        ):
             return HeuristicVerdict(
                 FailureCategory.DATA,
                 64,

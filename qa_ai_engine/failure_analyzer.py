@@ -21,7 +21,6 @@ import re
 from typing import Any
 
 from ._logging import get_logger
-
 from .ai_config import AIConfig, ai_config
 from .llm_client import BaseLLMClient, LLMUnavailableError, get_llm_client
 from .models import AnalysisResult, Evidence, FailureCategory, FailureRecord, Severity
@@ -89,7 +88,9 @@ class FailureAnalyzer:
         result.similar_failures = similar
         return result
 
-    def retrieve_similar(self, record: FailureRecord, top_k: int | None = None) -> list[dict[str, Any]]:
+    def retrieve_similar(
+        self, record: FailureRecord, top_k: int | None = None
+    ) -> list[dict[str, Any]]:
         """RAG: return the most similar past failures from the vector store."""
         try:
             hits = self.vector_store.search(record.searchable_text(), top_k or self.cfg.rag_top_k)
@@ -233,7 +234,17 @@ class FailureAnalyzer:
                 "Check the account's roles/permissions for the target resource.",
             )
         # 3. Locator / element issues.
-        if any(k in text for k in ("locator", "selector", "waiting for", "element is not", "no node found", "strict mode")):
+        if any(
+            k in text
+            for k in (
+                "locator",
+                "selector",
+                "waiting for",
+                "element is not",
+                "no node found",
+                "strict mode",
+            )
+        ):
             return (
                 FailureCategory.LOCATOR,
                 80,
@@ -241,8 +252,17 @@ class FailureAnalyzer:
                 "Compare the expected selector against the current DOM; the UI markup likely changed.",
             )
         # 4. Timeout / network.
-        if "timeout" in text or "timed out" in text or "err_connection" in text or "econnrefused" in text:
-            category = FailureCategory.NETWORK if ("connection" in text or "econnrefused" in text) else FailureCategory.PERFORMANCE
+        if (
+            "timeout" in text
+            or "timed out" in text
+            or "err_connection" in text
+            or "econnrefused" in text
+        ):
+            category = (
+                FailureCategory.NETWORK
+                if ("connection" in text or "econnrefused" in text)
+                else FailureCategory.PERFORMANCE
+            )
             return (
                 category,
                 72,
@@ -250,7 +270,9 @@ class FailureAnalyzer:
                 "Check environment availability and latency; consider raising the timeout only if the app is genuinely slow.",
             )
         # 5. Blank / empty dashboard.
-        if ("blank" in text or "did not render" in text or "no widgets" in text) or (ev.dom and len(ev.dom.strip()) < 200):
+        if ("blank" in text or "did not render" in text or "no widgets" in text) or (
+            ev.dom and len(ev.dom.strip()) < 200
+        ):
             return (
                 FailureCategory.UI,
                 70,
@@ -311,7 +333,15 @@ class FailureAnalyzer:
         grounded: list[str] = []
         for line in claimed:
             low = line.lower()
-            source_words = {"screenshot", "console", "network", "dom", "api", "stacktrace", "assertion"}
+            source_words = {
+                "screenshot",
+                "console",
+                "network",
+                "dom",
+                "api",
+                "stacktrace",
+                "assertion",
+            }
             referenced = source_words & set(re.findall(r"[a-z]+", low))
             if not referenced or referenced & available:
                 grounded.append(line)
@@ -321,7 +351,11 @@ class FailureAnalyzer:
     def _severity_for(category: FailureCategory) -> Severity:
         if category in (FailureCategory.BACKEND, FailureCategory.AUTHENTICATION):
             return Severity.CRITICAL
-        if category in (FailureCategory.AUTHORIZATION, FailureCategory.API, FailureCategory.NETWORK):
+        if category in (
+            FailureCategory.AUTHORIZATION,
+            FailureCategory.API,
+            FailureCategory.NETWORK,
+        ):
             return Severity.MAJOR
         if category == FailureCategory.FLAKY:
             return Severity.MINOR

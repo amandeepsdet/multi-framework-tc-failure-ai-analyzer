@@ -64,10 +64,5 @@ def test_analysis_result_round_trip():
 
 
 def test_searchable_text_includes_status_codes():
-    ctx = (
-        FailureContextBuilder()
-        .with_test("t")
-        .with_network([{"status": 401}])
-        .build()
-    )
+    ctx = FailureContextBuilder().with_test("t").with_network([{"status": 401}]).build()
     assert "401" in ctx.searchable_text()

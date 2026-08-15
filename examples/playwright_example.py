@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from aiqa import FailureAnalyzer, render
-from aiqa.adapters import PlaywrightAdapter, PlaywrightEventRecorder
+from aiqa.adapters import PlaywrightAdapter
 
 
 def on_test_failure(page, exception: BaseException, test_name: str) -> None:
@@ -47,4 +47,6 @@ if __name__ == "__main__":
         def content(self):
             return "<html><body>Login</body></html>"
 
-    on_test_failure(FakePage(), TimeoutError("locator button#submit not found"), "login::test_submit")
+    on_test_failure(
+        FakePage(), TimeoutError("locator button#submit not found"), "login::test_submit"
+    )

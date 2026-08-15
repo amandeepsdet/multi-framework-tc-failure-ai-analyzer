@@ -11,7 +11,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from aiqa_action import discovery as discovery_mod
 from aiqa_action import github as gh
 from aiqa_action import main as main_mod
@@ -20,13 +19,15 @@ from aiqa_action.grouping import group_failures
 from aiqa_action.inputs import load_inputs
 from aiqa_action.masking import SecretMasker
 
+pytestmark = pytest.mark.action
+
 
 # --------------------------------------------------------------------------- #
 # Artifact helpers
 # --------------------------------------------------------------------------- #
 def _junit(path: Path, cases: list[tuple[str, str | None]]) -> Path:
     """cases: list of (name, failure_message|None)."""
-    body = ['<testsuite name="suite" tests="{}">'.format(len(cases))]
+    body = [f'<testsuite name="suite" tests="{len(cases)}">']
     for name, msg in cases:
         if msg is None:
             body.append(f'<testcase classname="pkg" name="{name}"/>')
@@ -109,8 +110,10 @@ def test_empty_report_directory(tmp_path):
 def test_run_with_failures_end_to_end(tmp_path):
     reports = tmp_path / "reports"
     reports.mkdir()
-    _junit(reports / "junit.xml", [("test_login", "AssertionError: expected 200 but got 500"),
-                                    ("test_ok", None)])
+    _junit(
+        reports / "junit.xml",
+        [("test_login", "AssertionError: expected 200 but got 500"), ("test_ok", None)],
+    )
     env = _base_env(tmp_path)
     rc = main_mod.run(env)
     assert rc == 0
@@ -195,9 +198,7 @@ class _FakeGitHub:
 
 def test_pr_comment_created():
     fake = _FakeGitHub(existing=[])
-    ok, action = gh.upsert_pr_comment(
-        "body", token="t", repo="acme/app", pr_number=7, http=fake
-    )
+    ok, action = gh.upsert_pr_comment("body", token="t", repo="acme/app", pr_number=7, http=fake)
     assert ok and action == "created"
     assert any(m == "POST" for m, _ in fake.calls)
 
@@ -251,8 +252,13 @@ def test_missing_github_token_skips_comment():
 # 13. Offline mode (default) -> use_llm False
 # --------------------------------------------------------------------------- #
 def test_offline_mode_default():
-    inputs = load_inputs({"INPUT_ANALYSIS_MODE": "offline", "INPUT_LLM_PROVIDER": "openai",
-                          "INPUT_LLM_API_KEY": "sk-secret"})
+    inputs = load_inputs(
+        {
+            "INPUT_ANALYSIS_MODE": "offline",
+            "INPUT_LLM_PROVIDER": "openai",
+            "INPUT_LLM_API_KEY": "sk-secret",
+        }
+    )
     assert inputs.use_llm is False
 
 
@@ -261,9 +267,9 @@ def test_offline_mode_default():
 # --------------------------------------------------------------------------- #
 def test_llm_mode_requires_provider_and_key():
     assert load_inputs({"INPUT_LLM_PROVIDER": "openai"}).use_llm is False
-    assert load_inputs(
-        {"INPUT_LLM_PROVIDER": "openai", "INPUT_LLM_API_KEY": "sk-x"}
-    ).use_llm is True
+    assert (
+        load_inputs({"INPUT_LLM_PROVIDER": "openai", "INPUT_LLM_API_KEY": "sk-x"}).use_llm is True
+    )
 
 
 # --------------------------------------------------------------------------- #

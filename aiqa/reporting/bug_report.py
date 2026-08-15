@@ -29,8 +29,7 @@ class BugReportBuilder:
         steps = self._steps(context)
         expected = "The test completes successfully."
         actual = (
-            (context.assertion_message or context.exception.message)
-            if context else rc.summary
+            (context.assertion_message or context.exception.message) if context else rc.summary
         ) or rc.summary
         fix = result.recommendations[0].action if result.recommendations else rc.detail
 

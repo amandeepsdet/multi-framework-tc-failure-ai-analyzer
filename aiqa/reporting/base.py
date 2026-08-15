@@ -9,8 +9,6 @@ code changes.
 
 from __future__ import annotations
 
-from typing import Callable
-
 from ..core.interfaces import Reporter
 
 _REGISTRY: dict[str, type[Reporter]] = {}
@@ -29,8 +27,10 @@ def get_reporter(format: str) -> Reporter:
     """Instantiate a registered reporter by format key (e.g. ``"markdown"``)."""
     key = (format or "").lower()
     if key not in _REGISTRY:
-        raise KeyError(f"No reporter registered for format '{format}'. "
-                       f"Available: {', '.join(sorted(_REGISTRY)) or 'none'}")
+        raise KeyError(
+            f"No reporter registered for format '{format}'. "
+            f"Available: {', '.join(sorted(_REGISTRY)) or 'none'}"
+        )
     return _REGISTRY[key]()
 
 
