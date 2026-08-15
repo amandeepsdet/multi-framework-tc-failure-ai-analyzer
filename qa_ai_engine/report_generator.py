@@ -62,7 +62,7 @@ def _package_version() -> str:
             return _metadata.version(name)
         except _metadata.PackageNotFoundError:
             continue
-    return "3.2.0"
+    return "3.3.0"
 
 
 # Small inline SVG icon set (feather-style, stroke=currentColor). Presentation only.

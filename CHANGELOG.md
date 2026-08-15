@@ -4,7 +4,7 @@ All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and the
 [Keep a Changelog](https://keepachangelog.com/) format.
 
-## [Unreleased]
+## [3.3.0] — 2026-08-15
 
 ### Added
 - **GitHub Action** (`.github/actions/analyze-failures`) — a reusable, composite

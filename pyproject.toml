@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "multi-framework-tc-failure-ai-analyzer"
-version = "3.2.0"
+version = "3.3.0"
 description = "A framework-agnostic, AI-powered Quality Engineering SDK. Turns a failing test from ANY automation framework (Playwright, Selenium, Robot Framework, pytest, Cypress, ...) into an evidence-grounded root-cause analysis, confidence score, owner, and tracker-ready bug report. Adapter-based core, works fully offline with zero API keys. (Formerly published as playwright-tc-failure-ai-analyzer.)"
 readme = "PACKAGE_README.md"
 requires-python = ">=3.11"
