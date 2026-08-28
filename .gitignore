@@ -13,6 +13,12 @@ reports/
 screenshots/
 test-results/
 
+# Coverage output
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
 # Committed sample output (a showcase of what the SDK produces) — keep it
 # despite the generic reports/ rule above.
 !sample_output/

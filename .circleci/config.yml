@@ -1,0 +1,71 @@
+# CircleCI configuration — mirrors .github/workflows/ci.yml.
+# Runs the offline SDK + AI + Action tests, plus ruff/black/mypy, on the
+# supported Python matrix (3.11 / 3.12 / 3.13).
+version: 2.1
+
+jobs:
+  test:
+    parameters:
+      python-version:
+        type: string
+    docker:
+      - image: cimg/python:<< parameters.python-version >>
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - v1-deps-<< parameters.python-version >>-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
+            - v1-deps-<< parameters.python-version >>-
+
+      - run:
+          name: Install package (with dev tooling)
+          command: |
+            python -m pip install --upgrade pip
+            pip install -e ".[dev]"
+            # Runtime deps for the shared demo conftest (Playwright/requests/etc.).
+            # The offline SDK + AI tests never launch a browser, so no
+            # `playwright install` is required.
+            pip install -r requirements.txt
+
+      - save_cache:
+          key: v1-deps-<< parameters.python-version >>-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
+          paths:
+            - ~/.cache/pip
+
+      - run:
+          name: Lint (ruff)
+          command: ruff check .
+
+      - run:
+          name: Format check (black)
+          command: black --check .
+
+      - run:
+          name: Type check (mypy)
+          command: mypy aiqa
+
+      - run:
+          name: Run offline SDK + AI + Action tests (with coverage)
+          command: |
+            mkdir -p test-results
+            pytest tests/aiqa tests/ai tests/action \
+              -m "sdk or ai or action" -o addopts="" -q \
+              --cov=aiqa --cov=qa_ai_engine --cov-report=term-missing \
+              --cov-report=xml \
+              --junitxml=test-results/junit.xml
+
+      - store_test_results:
+          path: test-results
+
+      - store_artifacts:
+          path: coverage.xml
+          destination: coverage.xml
+
+workflows:
+  ci:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              python-version: ["3.11", "3.12", "3.13"]
