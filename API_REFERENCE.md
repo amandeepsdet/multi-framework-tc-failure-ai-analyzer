@@ -78,6 +78,25 @@ Selected methods: `with_test(...)`, `with_exception(exc)`,
 `with_artifact(name, path)`, `with_custom_evidence(key, value)`,
 `with_execution(...)`, `build() -> FailureContext`.
 
+### `Evidence`
+
+The collected signals attached to a `FailureContext` (`context.evidence`). Every
+field is optional; the analyzer only ever grounds claims in what is present.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `screenshot` | `str | None` | Path to a captured screenshot. |
+| `dom_snapshot` | `str` | HTML snapshot (truncated to `max_chars`, default 20000). |
+| `console` | `list[ConsoleMessage]` | Browser console messages (`.level`, `.text`). |
+| `network` | `list[NetworkEvent]` | Requests (`.method`, `.url`, `.status`, `.duration_ms`). |
+| `api_responses` | `list[dict]` | Raw API response payloads. |
+| `logs` | `list[LogEntry]` | Application/test logs (`.level`, `.message`). |
+| `artifacts` | `dict[str, str]` | Named file paths (trace, video, HAR, …). |
+| `custom` | `dict[str, Any]` | Anything else (e.g. `locator`, `selector`). |
+
+Helper: `available_sources() -> list[str]` names the non-empty evidence buckets,
+used by reports to show what grounded the analysis.
+
 ### `AnalysisResult`
 
 Structured output of the engine — the only input reporters consume.
@@ -94,6 +113,34 @@ Structured output of the engine — the only input reporters consume.
 | `category` | `FailureCategory` | convenience → `root_cause.category` |
 
 Methods: `to_dict()`, `to_json(indent=2)`, `AnalysisResult.from_dict(data)`.
+
+### Enums
+
+All are string enums (`str, Enum`), so `member.value` is a stable, human-readable
+string safe to serialize. Each exposes a tolerant `coerce(value)` classmethod
+that maps arbitrary input to the closest member (falling back to a sensible
+default) — useful when ingesting external JSON.
+
+**`FailureCategory`** (24 members) — `.value` shown:
+`UI`, `Frontend`, `Locator`, `Element Not Found`, `Element Not Visible`, `API`,
+`Backend`, `Authentication`, `Authorization`, `Security`, `Network`, `Timeout`,
+`Performance`, `Infrastructure`, `Database`, `Dependency`, `Browser`, `Mobile`,
+`Environment`, `Data`, `Configuration`, `Assertion`, `Flaky`, `Unknown`.
+`FailureCategory.coerce(text)` keyword-matches free text (default `Unknown`).
+
+**`Severity`** (highest → lowest): `Blocker`, `Critical`, `Major`, `Minor`,
+`Trivial`.
+
+**`RiskLevel`**: `Critical`, `High`, `Medium`, `Low`. `RiskLevel.coerce(value)`
+defaults to `Medium`.
+
+```python
+from aiqa import FailureCategory, RiskLevel, Severity
+
+FailureCategory.coerce("got HTTP 500 from server")   # -> FailureCategory.BACKEND
+RiskLevel.coerce("blocker")                           # -> RiskLevel.CRITICAL
+Severity.CRITICAL.value                               # -> "Critical"
+```
 
 ---
 
@@ -191,6 +238,23 @@ portal.add_failure(result, context)
 portal.add_success("checkout::test_cart")
 portal.finish_run()   # -> reports/index.html + reports/run_*/
 ```
+
+`finish_run()` returns an `ExecutionRun` aggregating the whole execution:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `run_id` | `str` | e.g. `run_20260901_140355`. |
+| `total` / `passed` / `failed` / `skipped` | `int` | Raw counts. |
+| `pass_rate` | `float` | Percentage 0–100. |
+| `avg_confidence` | `float` | Mean analysis confidence. |
+| `quality_score` | `int` | Weighted 0–100 score. |
+| `quality_band` | `str` | Excellent / Good / Warning / Poor. |
+| `build_health` | `str` | Healthy / Warning / Critical. |
+| `release_readiness` | `str` | `READY` / `AT RISK` / `NOT READY`. |
+| `regressions` / `flaky_count` | `int` | Vs. previous run / over the window. |
+| `categories` / `owners` / `severities` | `dict[str, int]` | Distributions. |
+| `failures` | `list[RunFailure]` | Flattened per-failure records (with `.signature`). |
+| `executive_summary` | `str` | Prose summary of the run. |
 
 ### Portal internals (advanced)
 
@@ -309,6 +373,10 @@ r.conflicting_evidence # list[str]  — expected-but-missing corroboration
 r.assessment           # one-sentence summary
 r.low_confidence_note  # populated only when confidence is low
 ```
+
+Confidence bands (`r.level` / `r.badge`): **High** ≥ 85 (🟢), **Medium** 60–84
+(🟡), **Low** < 60 (🔴). The `low_confidence_note` is populated when confidence
+falls below 70. `to_dict()` includes both `level` and `badge`.
 
 ### AI Locator Healing
 
