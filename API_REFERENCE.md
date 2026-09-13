@@ -26,6 +26,7 @@ from aiqa.adapters import (
 
 - **Install name:** `multi-framework-tc-failure-ai-analyzer`
 - **Import name:** `aiqa`
+- **Version:** 3.3.0 — see [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
 
@@ -186,9 +187,10 @@ render(result: AnalysisResult, format: str = "markdown",
        context: FailureContext | None = None) -> str
 ```
 
-`format` is one of `available_formats()` → `"markdown" | "json" | "html" |
-"console"`. `get_reporter(format)` returns the `Reporter` instance if you want to
-hold onto it.
+`format` is one of `available_formats()`, which returns the registered formats
+sorted alphabetically → `["console", "html", "json", "markdown"]` (the `render`
+default is `"markdown"`). `get_reporter(format)` returns the `Reporter` instance
+if you want to hold onto it.
 
 ```python
 print(render(result, "html", context))
@@ -283,8 +285,8 @@ SDK without touching the core — see [DESIGN.md](DESIGN.md).
 | `FrameworkAdapter` | `collect_failure_context(...) -> FailureContext` | Support a new framework. |
 | `Analyzer` | `analyze(context) -> AnalysisResult` | Swap the analysis strategy. |
 | `Reporter` | `render(result, context) -> str` | Add an output format. |
-| `LLMProvider` | `complete(prompt) -> str` / `is_available()` | Plug in an AI backend. |
-| `SimilarityIndex` | `add(...)` / `search(...)` | Back the RAG similarity search. |
+| `LLMProvider` | `complete_json(prompt, system="") -> dict` / `available() -> bool` | Plug in an AI backend. |
+| `SimilarityIndex` | `add(doc_id, text, metadata)` / `search(text, top_k) -> list[dict]` | Back the RAG similarity search. |
 
 Built-in implementations: `OfflineProvider`, `OpenAIProvider` (providers);
 `InMemoryIndex`, `NullIndex` (indexes); the five adapters listed at the top.
@@ -316,10 +318,24 @@ See runnable usage for each in [examples/](examples/) and
 
 ### `AiqaConfig` / `config`
 
-`config` is the process-wide default `AiqaConfig`. Configuration is read from
-environment variables (e.g. `AIQA_REPORTS_DIR`, `AI_MASK_SECRETS`,
-`AI_MASK_URLS`, and provider keys). Prefer injecting a config rather than relying
-on globals in library code.
+`config` is the process-wide default `AiqaConfig`, populated from the environment
+at import time. Prefer constructing and injecting your own `AiqaConfig()` rather
+than relying on the global in library code. All variables are optional — the SDK
+runs fully offline with none of them set.
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `AIQA_PROVIDER` | `offline` | Analysis backend: `offline` (heuristic) or `openai`. |
+| `AIQA_MODEL` | `gpt-4o-mini` | Model name for the chosen provider. |
+| `AIQA_API_KEY` | — | Provider key (falls back to `OPENAI_API_KEY`). |
+| `AIQA_BASE_URL` | — | Custom / OpenAI-compatible endpoint. |
+| `AIQA_BASE_DIR` | `.aiqa` | Where the similarity history is written. |
+| `AIQA_ENABLE_HISTORY` | `false` | Persist a local similarity index for RAG. |
+| `AIQA_RAG_TOP_K` | `3` | Number of similar past failures to retrieve. |
+| `AIQA_REPORTS_DIR` | `reports` | Default output dir for `QualityPortal` (read by the portal). |
+
+> The `AI_MASK_SECRETS` / `AI_MASK_URLS` masking toggles belong to the legacy
+> `qa_ai_engine` pytest plugin, not the `aiqa` SDK.
 
 ---
 
@@ -381,8 +397,9 @@ falls below 70. `to_dict()` includes both `level` and `badge`.
 ### AI Locator Healing
 
 Recover a broken UI locator from a DOM snapshot. Suggestions are ranked by
-stability (test-id > id > role > name > text > css class) and emitted for every
-supported framework.
+stability (test-id > id > role > name > text > css > xpath) and emitted for every
+supported framework. Pass `target_text=` and/or `target_attributes=` to guide the
+match.
 
 ```python
 from aiqa import heal_locator     # or LocatorHealingEngine for reuse/injection
