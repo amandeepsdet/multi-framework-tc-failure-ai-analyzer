@@ -1,4 +1,16 @@
-# API Reference
+<div align="center">
+
+# 📖 AIQA API Reference
+
+**The complete public surface of `import aiqa` — engine, adapters, reporting, and the Quality Portal.**
+
+[![Version](https://img.shields.io/badge/version-3.3.0-blue)](CHANGELOG.md)
+[![PyPI](https://img.shields.io/badge/pip-multi--framework--tc--failure--ai--analyzer-3775A9?logo=pypi&logoColor=white)](https://pypi.org/project/multi-framework-tc-failure-ai-analyzer/)
+[![Import](https://img.shields.io/badge/import-aiqa-306998?logo=python&logoColor=white)](#)
+[![Offline](https://img.shields.io/badge/offline-zero%20API%20keys-brightgreen)](#)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+</div>
 
 The public API is what `import aiqa` exposes. Everything here is imported from
 the top-level package unless noted otherwise.
@@ -28,9 +40,31 @@ from aiqa.adapters import (
 - **Import name:** `aiqa`
 - **Version:** 3.3.0 — see [CHANGELOG.md](CHANGELOG.md) for release history.
 
+### 🗺️ Architecture at a glance
+
+```mermaid
+flowchart LR
+    A["🔌 Adapters"] -->|produce| B["📦 FailureContext"]
+    B -->|analyzed by| C["🧠 FailureAnalyzer"]
+    C -->|produces| D["📊 AnalysisResult"]
+    D -->|rendered by| E["📝 Reporters"]
+    D -->|aggregated by| F["🏛️ QualityPortal"]
+    E --> G["Markdown · JSON · HTML · Console"]
+    F --> H["index.html dashboard"]
+
+    classDef adapter fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a;
+    classDef core fill:#fef3c7,stroke:#f59e0b,color:#78350f;
+    classDef engine fill:#ede9fe,stroke:#8b5cf6,color:#4c1d95;
+    classDef report fill:#dcfce7,stroke:#22c55e,color:#14532d;
+    class A adapter;
+    class B,D core;
+    class C engine;
+    class E,F,G,H report;
+```
+
 ---
 
-## Core domain
+## 🧩 Core domain
 
 ### `FailureContext`
 
@@ -129,10 +163,11 @@ default) — useful when ingesting external JSON.
 `Environment`, `Data`, `Configuration`, `Assertion`, `Flaky`, `Unknown`.
 `FailureCategory.coerce(text)` keyword-matches free text (default `Unknown`).
 
-**`Severity`** (highest → lowest): `Blocker`, `Critical`, `Major`, `Minor`,
-`Trivial`.
+**`Severity`** (highest → lowest):
+🔴 `Blocker` · 🟠 `Critical` · 🟡 `Major` · 🔵 `Minor` · ⚪ `Trivial`
 
-**`RiskLevel`**: `Critical`, `High`, `Medium`, `Low`. `RiskLevel.coerce(value)`
+**`RiskLevel`**:
+🔴 `Critical` · 🟠 `High` · 🟡 `Medium` · 🟢 `Low` — `RiskLevel.coerce(value)`
 defaults to `Medium`.
 
 ```python
@@ -145,7 +180,7 @@ Severity.CRITICAL.value                               # -> "Critical"
 
 ---
 
-## Engine
+## 🧠 Engine
 
 ### `FailureAnalyzer`
 
@@ -178,7 +213,7 @@ Equivalent to `FailureAnalyzer(**kwargs).analyze(context)`.
 
 ---
 
-## Reporting
+## 📊 Reporting
 
 ### `render` / `get_reporter` / `available_formats`
 
@@ -215,7 +250,7 @@ open("bug.md", "w").write(BugReportBuilder.to_markdown(bug))
 
 ---
 
-## Quality Portal (run history)
+## 🏛️ Quality Portal (run history)
 
 ### `QualityPortal`
 
@@ -275,7 +310,7 @@ These power the dashboard and can be used directly from
 
 ---
 
-## Extension points (interfaces)
+## 🔌 Extension points (interfaces)
 
 From `aiqa` (defined in `aiqa.core.interfaces`). Implement these to extend the
 SDK without touching the core — see [DESIGN.md](DESIGN.md).
@@ -293,7 +328,7 @@ Built-in implementations: `OfflineProvider`, `OpenAIProvider` (providers);
 
 ---
 
-## Adapters
+## 🔗 Adapters
 
 All adapters live in `aiqa.adapters` and expose
 `collect_failure_context(...) -> FailureContext`.
@@ -306,6 +341,7 @@ All adapters live in `aiqa.adapters` and expose
 | `RobotFrameworkAdapter` | `.collect_failure_context(test_name=, message=, status="FAIL", ...)` |
 | `PlaywrightAdapter` | `PlaywrightAdapter(page=page, recorder=recorder).collect_failure_context(exc, test_name=...)` |
 
+> [!NOTE]
 > `PlaywrightAdapter` / `PlaywrightEventRecorder` are lazy-exported so importing
 > `aiqa.adapters` never imports Playwright.
 
@@ -314,7 +350,7 @@ See runnable usage for each in [examples/](examples/) and
 
 ---
 
-## Configuration
+## 🛠️ Configuration
 
 ### `AiqaConfig` / `config`
 
@@ -334,17 +370,19 @@ runs fully offline with none of them set.
 | `AIQA_RAG_TOP_K` | `3` | Number of similar past failures to retrieve. |
 | `AIQA_REPORTS_DIR` | `reports` | Default output dir for `QualityPortal` (read by the portal). |
 
+> [!NOTE]
 > The `AI_MASK_SECRETS` / `AI_MASK_URLS` masking toggles belong to the legacy
 > `qa_ai_engine` pytest plugin, not the `aiqa` SDK.
 
 ---
 
-## Phase 1 — Enterprise AI capabilities
+## 🚀 Phase 1 — Enterprise AI capabilities
 
-All additions are framework-agnostic, offline-capable, and fully backward
-compatible: existing APIs, adapters, and reports are unchanged.
+> [!IMPORTANT]
+> All additions are framework-agnostic, offline-capable, and fully backward
+> compatible: existing APIs, adapters, and reports are unchanged.
 
-### Intelligent Failure Classification
+### 🎯 Intelligent Failure Classification
 
 Every `AnalysisResult` now also carries `risk_level` (Critical/High/Medium/Low),
 a `subcategory` and `reason` on its `root_cause`, and a `reasoning_detail`
@@ -373,7 +411,7 @@ resolver = OwnerResolver({FailureCategory.BACKEND: "Payments Squad"})
 resolver.register(FailureCategory.SECURITY, "AppSec").resolve(FailureCategory.SECURITY)
 ```
 
-### AI Confidence Reasoning
+### 💡 AI Confidence Reasoning
 
 Every analysis produces an explainable `ConfidenceReasoning` at
 `result.reasoning_detail`, rendered in the console, Markdown, HTML and JSON
@@ -394,7 +432,7 @@ Confidence bands (`r.level` / `r.badge`): **High** ≥ 85 (🟢), **Medium** 60�
 (🟡), **Low** < 60 (🔴). The `low_confidence_note` is populated when confidence
 falls below 70. `to_dict()` includes both `level` and `badge`.
 
-### AI Locator Healing
+### 🩹 AI Locator Healing
 
 Recover a broken UI locator from a DOM snapshot. Suggestions are ranked by
 stability (test-id > id > role > name > text > css > xpath) and emitted for every
@@ -413,9 +451,10 @@ best.quality                       # "Best" | "Good" | "Weak"
 result.to_json()
 ```
 
-Empty or malformed DOM never raises — it returns a graceful, un-healed result.
+> [!TIP]
+> Empty or malformed DOM never raises — it returns a graceful, un-healed result.
 
-### Intelligent Bug Generator
+### 🐞 Intelligent Bug Generator
 
 Turn an analysis into a professional, tracker-ready bug and export it anywhere.
 
@@ -429,7 +468,7 @@ exporter.to_jira_json(bug)     # also: to_azure_json/to_github_issue/to_linear_j
 exporter.export_all(bug, "out/")  # writes bug.md/html/json/txt + all trackers
 ```
 
-### Command-line interface
+### 💻 Command-line interface
 
 Installed as the `aiqa` console script (also `python -m aiqa`):
 
@@ -443,7 +482,7 @@ aiqa generate-bug    context.json --format jira      # or --out ./bug
 `context.json` is a serialized `FailureContext` (`FailureContext.to_json()`).
 Add `--json` to `classify`/`explain-failure`/`heal-locator` for machine output.
 
-### GitHub Action
+### 🤖 GitHub Action
 
 For CI, the `analyze-failures` GitHub Action orchestrates this same public API
 (adapters → `FailureAnalyzer` → `QualityPortal` → reporters) and publishes the
