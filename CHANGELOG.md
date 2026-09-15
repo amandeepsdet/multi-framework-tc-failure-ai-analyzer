@@ -1,12 +1,22 @@
-# Changelog
+<div align="center">
 
-All notable changes to this project are documented here. This project adheres to
-[Semantic Versioning](https://semver.org/) and the
+# 📋 Changelog
+
+**All notable changes to `multi-framework-tc-failure-ai-analyzer` (`import aiqa`).**
+
+[![Latest](https://img.shields.io/badge/latest-3.3.0-blue)](https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/releases/tag/v3.3.0)
+[![Keep a Changelog](https://img.shields.io/badge/Keep%20a%20Changelog-1.1.0-orange?logo=keepachangelog&logoColor=white)](https://keepachangelog.com/)
+[![SemVer](https://img.shields.io/badge/SemVer-2.0.0-3F4551?logo=semver&logoColor=white)](https://semver.org/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+</div>
+
+This project adheres to [Semantic Versioning](https://semver.org/) and the
 [Keep a Changelog](https://keepachangelog.com/) format.
 
-## [3.3.0] — 2026-08-15
+## 🚀 [3.3.0] — 2026-08-15
 
-### Added
+### ✨ Added
 - **GitHub Action** (`.github/actions/analyze-failures`) — a reusable, composite
   action that analyzes failed test artifacts with the AIQA SDK and publishes the
   results to the GitHub **Job Summary**, a **Pull Request comment** (create/update
@@ -20,7 +30,7 @@ All notable changes to this project are documented here. This project adheres to
   [docs/github-action.md](docs/github-action.md). Includes local test scripts and
   automated tests under `tests/action/`.
 
-### Changed
+### 🔧 Changed
 - **Developer tooling hardening** (no runtime/API changes). Shipped **PEP 561**
   typing markers (`aiqa/py.typed`, `qa_ai_engine/py.typed`) so downstream type
   checkers discover the annotations. Centralized all tool config in
@@ -33,13 +43,14 @@ All notable changes to this project are documented here. This project adheres to
   the modern `aiqa` SDK vs. the legacy compatibility-only `qa_ai_engine` package
   in `DESIGN.md`. `mypy aiqa` is clean; SDK coverage ~87%.
 
-## [3.2.0] — 2026-08-09
+## 🧠 [3.2.0] — 2026-08-09
 
-Enterprise AI capabilities. Purely additive and fully backward compatible — the
-architecture, public APIs, adapters, and existing reports are unchanged, and no
-new runtime dependencies are introduced (everything is standard-library, offline).
+> [!NOTE]
+> Enterprise AI capabilities. Purely additive and fully backward compatible — the
+> architecture, public APIs, adapters, and existing reports are unchanged, and no
+> new runtime dependencies are introduced (everything is standard-library, offline).
 
-### Added
+### ✨ Added
 - **Intelligent Failure Classification** — expanded `FailureCategory`, a new
   `RiskLevel`, `subcategory`/`reason` on `RootCause`, and `risk_level` on
   `AnalysisResult`. New `FailureClassifier` produces a structured `Classification`
@@ -59,14 +70,15 @@ new runtime dependencies are introduced (everything is standard-library, offline
   `heal-locator`, `generate-bug` subcommands (console script and `python -m aiqa`).
 - New examples and expanded API reference / README documentation.
 
-## [3.1.0] — 2026-08-03
+## 📊 [3.1.0] — 2026-08-03
 
-Minor release. Adds a new **multi-run reporting layer** on top of the existing
-single-result reporters. Fully backward compatible — the core domain models, the
-adapters, and the AI analysis engine are unchanged, and no new runtime
-dependencies are introduced (the portal is pure standard library).
+> [!NOTE]
+> Minor release. Adds a new **multi-run reporting layer** on top of the existing
+> single-result reporters. Fully backward compatible — the core domain models, the
+> adapters, and the AI analysis engine are unchanged, and no new runtime
+> dependencies are introduced (the portal is pure standard library).
 
-### Added
+### ✨ Added
 - **Quality Intelligence Platform** (`aiqa.reporting.portal`) — a historical,
   multi-execution reporting portal exposed through a single facade,
   `QualityPortal`, also re-exported at the top level (`from aiqa import QualityPortal`):
@@ -95,7 +107,7 @@ dependencies are introduced (the portal is pure standard library).
 - **`examples/generate_portal.py`** — a standalone script that generates a
   multi-run portal from synthetic scenarios.
 
-### Unchanged (backward compatible)
+### ✅ Unchanged (backward compatible)
 - Import name `aiqa` and the entire existing public API.
 - `FailureContext`, `AnalysisResult`, all adapters, and the analysis engine.
 - The single-result reporters (`markdown`, `json`, `html`, `console`) and
@@ -103,12 +115,13 @@ dependencies are introduced (the portal is pure standard library).
 
 ---
 
-## [3.0.0] — 2026-08-01
+## 📦 [3.0.0] — 2026-08-01
 
-Major release. **The package identity changed**, so this is a major version bump
-even though the public Python API (`import aiqa`) is unchanged.
+> [!IMPORTANT]
+> Major release. **The package identity changed**, so this is a major version bump
+> even though the public Python API (`import aiqa`) is unchanged.
 
-### Added
+### ✨ Added
 - **Multi-framework architecture** via an adapter layer:
   - Playwright
   - Selenium
@@ -124,34 +137,36 @@ even though the public Python API (`import aiqa`) is unchanged.
 - **Migration Guide** ([docs/MIGRATION.md](docs/MIGRATION.md)) and **CHANGELOG**.
 - **CI/CD** — GitHub Actions workflows for tests and PyPI publishing; issue/PR templates and contributing guide.
 
-### Changed
+### 🔧 Changed
 - **Package renamed**: `playwright-tc-failure-ai-analyzer` → `multi-framework-tc-failure-ai-analyzer`.
 - **Repository renamed**: `amandeepsdet/playwright-tc-failure-ai-analyzer` → `amandeepsdet/multi-framework-tc-failure-ai-analyzer`.
 - **Documentation** updated throughout (README, badges, install commands, project URLs).
 
-### Deprecated
+### ⚠️ Deprecated
 - The old PyPI package **`playwright-tc-failure-ai-analyzer`** (≤ 2.0.1). It
   remains installable for backward compatibility, but **all future releases ship
   only under `multi-framework-tc-failure-ai-analyzer`**.
 
-### Unchanged (backward compatible)
+### ✅ Unchanged (backward compatible)
 - Import name `aiqa` and the entire public API.
 - The `qa_ai_engine` pytest plugin (entry point `qa_ai_engine`).
 
 ---
 
-## [2.0.1] — 2026-07-29
+## 📝 [2.0.1] — 2026-07-29
 - Documentation rewrite positioning the project as a framework-agnostic SDK;
   packaging metadata refresh.
 
-## [2.0.0] — 2026-07-29
+## 🧩 [2.0.0] — 2026-07-29
 - Introduced the framework-agnostic `aiqa` SDK (core domain, adapters, analysis,
   reporting) alongside the original `qa_ai_engine` pytest plugin.
 
-## [1.0.0]
+## 🌱 [1.0.0]
 - Initial release as `playwright-tc-failure-ai-analyzer` — pytest + Playwright AI
   failure analysis engine.
 
+[3.3.0]: https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/releases/tag/v3.3.0
+[3.2.0]: https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/releases/tag/v3.2.0
 [3.1.0]: https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/releases/tag/v3.1.0
 [3.0.0]: https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/releases/tag/v3.0.0
 [2.0.1]: https://github.com/amandeepsdet/multi-framework-tc-failure-ai-analyzer/releases/tag/v2.0.1
